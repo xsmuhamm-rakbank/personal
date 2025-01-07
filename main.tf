@@ -26,3 +26,36 @@ module "digital-wallet" {
   username                   = jsondecode(data.aws_secretsmanager_secret_version.admin_user_pass.secret_string)["username"]
   password                   = jsondecode(data.aws_secretsmanager_secret_version.admin_user_pass.secret_string)["password"]
 }
+
+create secret with random password 
+
+  "deh-db-dev-01-secret" = {
+    name        = "deh-db-dev-01-secret"
+    description = "Secret used by dev rds database"
+    tags = {
+      Environment  = "deh-dev",
+      map-migrated = "d-server-03is5ms7k94v6w",
+    }
+  }
+
+resource "random_password" "password" {
+  length           = 16
+  special          = false
+  override_special = true
+  min_upper        = 1
+  min_lower        = 1
+  min_numeric      = 1
+}
+resource "aws_secretsmanager_secret_version" "admin_user_pass" {
+  secret_id = var.secret_id
+  secret_string = jsonencode({
+    username = "postgres"
+    password = random_password.password.result
+  })
+  version_stages = ["AWSCURRENT"]
+}
+data "aws_secretsmanager_secret_version" "admin_user_pass" {
+  secret_id = var.secret_id
+
+  depends_on = [aws_secretsmanager_secret_version.admin_user_pass]
+}
