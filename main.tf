@@ -1,86 +1,84 @@
-The error you're encountering, `authentication failed for https://rakartifactory.jfrog.io/artifactory/rakbank-artifactory-maven-dev/`, suggests that Maven is unable to authenticate with the Artifactory repository. Here's a breakdown of how you can resolve the issue:
+name: CICD Orchestrator
+## This pipeline perform continous integration on any new commit and deploy the releases into environments
 
-### 1. **Ensure Proper Authentication in `settings.xml`**
-   Your Maven setup requires proper authentication to access Artifactory. The credentials (username and password) for your repository need to be provided in the Maven `settings.xml` file.
+permissions:
+  id-token: write
+  contents: write
+  security-events: write
+  actions: read
+  pull-requests: write
 
-   - **Locate the `settings.xml` file**: It can usually be found in the following locations:
-     - `~/.m2/settings.xml` (user-specific)
-     - `Maven installation directory/conf/settings.xml` (system-wide)
-   
-   - **Add credentials in `settings.xml`**: If not already present, you need to add your Artifactory credentials. Here's an example of what to include:
+on:
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     # - '**'
+  # pull_request:
+  #   branches:
+  #     - 'release*/*'
 
-     ```xml
-     <servers>
-       <server>
-         <id>rakbank-artifactory-maven-dev</id>
-         <username>${env.ARTIFACTORY_USERNAME}</username>
-         <password>${env.ARTIFACTORY_PASSWORD}</password>
-       </server>
-     </servers>
-     ```
+jobs:
+  Identify_Environment:
+    name: "Identifying the environment"
+    runs-on: ubuntu-latest
+    outputs:
+      target_env: ${{ steps.set_env.outputs.env }}
+    steps:
+      - name: Determine Target Environment
+        id: set_env
+        run: |
+            echo "env=dev"  >> $GITHUB_OUTPUT  
+        shell: bash 
 
-     Replace `${env.ARTIFACTORY_USERNAME}` and `${env.ARTIFACTORY_PASSWORD}` with your actual credentials or reference environment variables if you're using them in a CI/CD pipeline.
+  ci:
+    name: "Continuous Integration"
+    needs: Identify_Environment
+    uses: rakbank-internal/enterprise-reusable-workflows/.github/workflows/multijob-maven-continous-integration.yml@feature/jfrog-app-publish
+    with:
+      AWS_REGION : ${{ vars.AWS_REGION }}
+      AWS_IAM_ROLE : ${{ vars.AWS_IAM_ROLE }}
+      SONAR_PROJECT_KEY : ${{ vars.SONAR_PROJECT_KEY }}
+      JAVA_VERSION_APP : ${{ vars.JAVA_VERSION_APP }}
+      JAVA_VERSION_SONAR : ${{ vars.JAVA_VERSION_SONAR }}
+      ENVIRONMENT: ${{ needs.Identify_Environment.outputs.target_env }}
+      PUBLISH_IMAGE: ${{ vars.PUBLISH_IMAGE }}
+    secrets:
+      AWS_ACCOUNT_ID : ${{ secrets.AWS_ACCOUNT_ID }}
+      AWS_ECR : ${{ secrets.AWS_ECR }}
+      DEVOPS_WORKFLOW_TOKEN: ${{ secrets.DEVOPS_WORKFLOW_TOKEN }}
+      SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL:  ${{ secrets.SONAR_HOST_URL }}
+      JFROG_USERNAME:  ${{ secrets.JFROG_USERNAME }}
+      JFROG_ARTIFACTORY_ACCESS_TOKEN:  ${{ secrets.JFROG_ARTIFACTORY_ACCESS_TOKEN }}
+      SONAR_ORGANIZATION_KEY:  ${{ secrets.SONAR_ORGANIZATION_KEY }}
 
-### 2. **Using GitHub Secrets for Authentication**
-   Since you are using GitHub Actions, it's recommended to store your Artifactory credentials as GitHub secrets and reference them in the GitHub Actions workflow.
 
-   - **Set up GitHub secrets**:
-     Go to your GitHub repository's settings > Secrets > New repository secret, and add `ARTIFACTORY_USERNAME` and `ARTIFACTORY_PASSWORD`.
+  deploy:
+    name: "Deploy application"
+    needs: [ ci, Identify_Environment ]
+    uses: rakbank-internal/enterprise-reusable-workflows/.github/workflows/helm-release-orchastrator.yml@feature/jfrog-app-publish
+    with:
+      AWS_REGION : ${{ vars.AWS_REGION }}
+      AWS_IAM_ROLE : ${{ vars.AWS_IAM_ROLE }}
+      K8S_MANIFEST_REPO : ${{ vars.K8S_MANIFEST_REPO }}
+      K8S_VALUES_FILE : ${{ vars.K8S_VALUES_FILE }}
+      HELM_CHART_REPO: ${{ vars.HELM_CHART_REPO }}
+      RELEASE_NAME: ${{ vars.RELEASE_NAME }}
+      IMAGE_TAG: ${{ needs.ci.outputs.IMAGE_TAG }}
+    secrets:
+      AWS_ACCOUNT_ID : ${{ secrets.AWS_ACCOUNT_ID }}
+      AWS_K8S_CLUSTER : ${{ secrets.AWS_K8S_CLUSTER }}
+      AWS_K8S_NAME_SPACE: ${{ secrets.AWS_K8S_NAME_SPACE }}
+      DEVOPS_WORKFLOW_TOKEN: ${{ secrets.DEVOPS_WORKFLOW_TOKEN }}
+      
 
-   - **Reference secrets in the GitHub Actions workflow**:
-     In your workflow, pass these secrets as environment variables or inputs:
-
-     ```yaml
-     ci:
-       name: "Continuous Integration"
-       needs: Identify_Environment
-       uses: rakbank-internal/enterprise-reusable-workflows/.github/workflows/multijob-maven-continous-integration.yml@composite
-       with:
-         AWS_REGION : ${{ vars.AWS_REGION }}
-         IAMROLENAME : ${{ vars.IAMROLENAME }}
-         K8SMANIFESTS : ${{ vars.K8SMANIFESTS }}
-         APPMANIFESTNAME : ${{ vars.APPMANIFESTNAME }}
-         SONAR_PROJECT_KEY : ${{ vars.SONAR_PROJECT_KEY }}
-         ENVIRONMENT: ${{ needs.Identify_Environment.outputs.environment }}
-       secrets:
-         ACCOUNTID : ${{ secrets.ACCOUNTID }}
-         ECRREPONAME : ${{ secrets.ECRREPONAME }}
-         DEVOPS_WORKFLOW_TOKEN: ${{ secrets.DEVOPS_WORKFLOW_TOKEN }}
-         SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
-         SONAR_HOST_URL:  ${{ secrets.SONAR_HOST_URL }}
-         SONAR_ORGANIZATION_KEY:  ${{ secrets.SONAR_ORGANIZATION_KEY }}
-         ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-         ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-     ```
-
-### 3. **Verify the Repository URL in `pom.xml`**
-   Ensure the repository URL in your `pom.xml` is correctly defined:
-
-   ```xml
-   <repositories>
-     <repository>
-       <id>rakbank-artifactory-maven-dev</id>
-       <name>rakbank-artifactory-maven-dev</name>
-       <url>https://rakartifactory.jfrog.io/artifactory/rakbank-artifactory-maven-dev/</url>
-     </repository>
-   </repositories>
-   ```
-
-   If the URL or credentials have changed, update them accordingly.
-
-### 4. **Check Artifactory Permissions**
-   - Make sure that the credentials you're using have access to the repository and the specific artifact (`otel-observability-core:jar:1.0.0-SNAPSHOT`). If you're unsure about the permissions, check with the Artifactory administrator.
-
-### 5. **Run Maven with Debugging Enabled**
-   If the issue persists, you can run Maven with debug logging to get more detailed information:
-
-   ```bash
-   mvn clean install -X
-   ```
-
-   This will provide more context and might help in diagnosing the exact cause of the failure.
-
-### 6. **Consider Using a Different Repository**
-   If the issue is specific to Artifactory and you're still encountering authentication failures, consider verifying if the repository is accessible and working correctly by trying to access it directly via a browser or using `curl` with the same credentials.
-
-By ensuring that the credentials are correctly set, the repository URL is valid, and the necessary permissions are in place, this should resolve the authentication issue. Let me know if you need more assistance!
+Prepare all required actions
+Getting action download info
+Download action repository 'actions/cache@v4' (SHA:1bd1e32a3bdc45362d1e726936510720a7c30a57)
+Download action repository 'actions/setup-java@v4' (SHA:7a6d8a8234af8eb26422e24e3006232cccaa061b)
+Run ./reusable-workflows/.github/actions/maven-compile
+Run actions/cache@v4
+Cache not found for input keys: Linux-m2-26c86510924d577bdcd59a55471f9bd13eaa13b5f50d794f416789e774753221, Linux-m2
+Run actions/setup-java@v4
+Installed distributions
+  Error: java-version or java-version-file input expected
