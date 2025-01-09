@@ -165,7 +165,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rakbank-internal/enterprise-reusable-workflows
-          ref: main
+          ref: feature/jfrog-app-publish
           path: reusable-workflows
           token: ${{ secrets.DEVOPS_WORKFLOW_TOKEN }}
           
@@ -191,7 +191,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rakbank-internal/enterprise-reusable-workflows
-          ref: main
+          ref: feature/jfrog-app-publish
           path: reusable-workflows
           token: ${{ secrets.DEVOPS_WORKFLOW_TOKEN }}
           
@@ -218,7 +218,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rakbank-internal/enterprise-reusable-workflows
-          ref: main
+          ref: feature/jfrog-app-publish
           path: reusable-workflows
           token: ${{ secrets.DEVOPS_WORKFLOW_TOKEN }}
 
@@ -260,7 +260,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rakbank-internal/enterprise-reusable-workflows
-          ref: main
+          ref: feature/jfrog-app-publish
           path: reusable-workflows
           token: ${{ secrets.DEVOPS_WORKFLOW_TOKEN }}
           
@@ -285,7 +285,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rakbank-internal/enterprise-reusable-workflows
-          ref: main
+          ref: feature/jfrog-app-publish
           path: reusable-workflows
           token: ${{ secrets.DEVOPS_WORKFLOW_TOKEN }}
  
@@ -307,7 +307,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rakbank-internal/enterprise-reusable-workflows
-          ref: main
+          ref: feature/jfrog-app-publish
           path: reusable-workflows
           token: ${{ secrets.DEVOPS_WORKFLOW_TOKEN }}
 
@@ -333,6 +333,10 @@ jobs:
         with:
           IMAGENAME: app-image
           IMAGETAG: ${{ github.sha }}
+        env:
+          TRIVY_CACHE_DIR: ~/.cache/trivy  # Set the cache directory
+          TRIVY_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-db,aquasec/trivy-db,ghcr.io/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: public.ecr.aws/aquasecurity/trivy-java-db,aquasec/trivy-java-db,ghcr.io/aquasecurity/trivy-java-db
           
   app-build-publish:
     if: ${{ inputs.PUBLISH_APP_ARTIFACT == 'true' }}
@@ -347,7 +351,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rakbank-internal/enterprise-reusable-workflows
-          ref: main
+          ref: feature/jfrog-app-publish
           path: reusable-workflows
           token: ${{ secrets.DEVOPS_WORKFLOW_TOKEN }}
 
@@ -375,7 +379,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rakbank-internal/enterprise-reusable-workflows
-          ref: main
+          ref: feature/jfrog-app-publish
           path: reusable-workflows
           token: ${{ secrets.DEVOPS_WORKFLOW_TOKEN }}
 
@@ -385,12 +389,11 @@ jobs:
         run: |
           branch_name=${GITHUB_REF#refs/heads/}
           commit_id=$(git rev-parse --short HEAD)
-          job_number=${{ github.run_number }}
           if [[ $branch_name == release*/* || $branch_name == hotfix*/*  ]]; then
             branch_tag=${branch_name//\//} 
-            branch_tag="${branch_tag}-${commit_id}-${job_number}"
+            branch_tag="${branch_tag}-${commit_id}"
           else
-              branch_tag="${branch_name}-${commit_id}-${job_number}"
+              branch_tag="${branch_name}-${commit_id}"
           fi
           echo "branch_tag=$branch_tag"  >> $GITHUB_OUTPUT
           echo "Current branch tag: $branch_tag"      
@@ -435,7 +438,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rakbank-internal/enterprise-reusable-workflows
-          ref: main
+          ref: feature/jfrog-app-publish
           path: reusable-workflows
           token: ${{ secrets.DEVOPS_WORKFLOW_TOKEN }}
           
