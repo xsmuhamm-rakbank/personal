@@ -19,7 +19,7 @@ resource "random_password" "password" {
   min_numeric      = 1
 }
 
-# Inject the generated password into the created secret
+# Inject the generated password into the created secret (second apply)
 resource "aws_secretsmanager_secret_version" "digital_wallet_pass" {
   secret_id     = aws_secretsmanager_secret.digital_wallet_pass.id  # Use the secret ID created above
   secret_string = jsonencode({
@@ -27,16 +27,18 @@ resource "aws_secretsmanager_secret_version" "digital_wallet_pass" {
     password = random_password.password.result  # Use the password generated above
   })
 
+  # Ensure that the random password is injected only after the secret is created
   depends_on = [
     aws_secretsmanager_secret.digital_wallet_pass,  # Ensure the secret is created first
     random_password.password  # Ensure password is generated before injecting into the secret
   ]
 }
 
-# Fetch the secret from AWS Secrets Manager 
+# Fetch the secret from AWS Secrets Manager (this step will depend on the secret version)
 data "aws_secretsmanager_secret_version" "digital_wallet_pass" {
   secret_id = var.dw_secret_id  # Use the secret ID from the variable
 
+  # This ensures the secret version is fetched after it is created
   depends_on = [
     aws_secretsmanager_secret_version.digital_wallet_pass  # Ensure the secret version is available
   ]
@@ -74,6 +76,7 @@ module "digital_wallet" {
   username = jsondecode(data.aws_secretsmanager_secret_version.digital_wallet_pass.secret_string)["username"]
   password = jsondecode(data.aws_secretsmanager_secret_version.digital_wallet_pass.secret_string)["password"]
 
+  # Ensure the RDS module runs after the secret is created and the password is injected
   depends_on = [
     aws_secretsmanager_secret_version.digital_wallet_pass
   ]
