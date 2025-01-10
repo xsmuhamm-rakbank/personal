@@ -1,12 +1,15 @@
-  I think secret for storing db password should be created in the first apply.
-RDS changes should be done in the second apply. 
-Or can we add a dependency for random password with AWS secret module ?
-Both methods are fine,  try to add dependency as per above suggestion. and share PR. Secrets should be available before injecting random password string in it. 
+################################################################################
+# Digital Wallet (Bitpanda) - RDS Resources
+################################################################################
 
+# Create the secret in AWS Secrets Manager using dw_secret_id variable
+resource "aws_secretsmanager_secret" "digital_wallet_pass" {
+  name        = var.dw_secret_id  # Use the secret ID from the variable
+  description = "Digital Wallet DB credentials"
+  tags        = var.tags
+}
 
-### Digital Wallet(Bitpanda) - RDS ###
-
-
+# Generate a random password
 resource "random_password" "password" {
   length           = 16
   special          = false
@@ -16,21 +19,32 @@ resource "random_password" "password" {
   min_numeric      = 1
 }
 
+# Inject the generated password into the created secret
 resource "aws_secretsmanager_secret_version" "digital_wallet_pass" {
-  secret_id = var.dw_secret_id
+  secret_id     = aws_secretsmanager_secret.digital_wallet_pass.id  # Use the secret ID created above
   secret_string = jsonencode({
     username = var.dw_rds_username
-    password = random_password.password.result
+    password = random_password.password.result  # Use the password generated above
   })
+
+  depends_on = [
+    aws_secretsmanager_secret.digital_wallet_pass,  # Ensure the secret is created first
+    random_password.password  # Ensure password is generated before injecting into the secret
+  ]
 }
 
+# Fetch the secret from AWS Secrets Manager 
 data "aws_secretsmanager_secret_version" "digital_wallet_pass" {
-  secret_id = var.dw_secret_id
+  secret_id = var.dw_secret_id  # Use the secret ID from the variable
 
-  depends_on = [aws_secretsmanager_secret_version.digital_wallet_pass]
+  depends_on = [
+    aws_secretsmanager_secret_version.digital_wallet_pass  # Ensure the secret version is available
+  ]
 }
 
-
+################################################################################
+# Digital Wallet (Bitpanda) - RDS Module
+################################################################################
 module "digital_wallet" {
   source = "git::https://github.com/rakbank-internal/terraform-aws-rds-postgres-module.git?ref=v1.3.0"
 
@@ -57,10 +71,8 @@ module "digital_wallet" {
   replica_count              = var.replica_count
   force_ssl                  = var.force_ssl
 
-
   username = jsondecode(data.aws_secretsmanager_secret_version.digital_wallet_pass.secret_string)["username"]
   password = jsondecode(data.aws_secretsmanager_secret_version.digital_wallet_pass.secret_string)["password"]
-
 
   depends_on = [
     aws_secretsmanager_secret_version.digital_wallet_pass
