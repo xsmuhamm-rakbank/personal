@@ -1,33 +1,5 @@
-module "secrets" {
-  source = "git::https://github.com/rakbank-internal/terraform-aws-secrets-manager-module.git?ref=v1.0.0"
-
-  for_each    = var.secrets
-  name        = lookup(each.value, "name")
-  description = lookup(each.value, "description", "")
-  tags        = lookup(each.value, "tags")
-}
-
-  "digital_wallet_secret" = {
-    name        = "digital-wallet-secret"
-    description = "Secret used by digital wallet dev rds database"
-    tags = {
-      Environment  = "deh-dev",
-      map-migrated = "d-server-03is5ms7k94v6w",
-    }
-  }
-
-alidation failed: .
-╷
-│ Error: Reference to undeclared resource
-│ 
-│   on main.tf line 159, in resource "aws_secretsmanager_secret_version" "digital_wallet_pass":
-│  159:     aws_secretsmanager_secret.digital_wallet_pass, # Ensure the secret is created first
-│ 
-│ A managed resource "aws_secretsmanager_secret" "digital_wallet_pass" has
-│ not been declared in the root module.
-
 ################################################################################
-# Digital Wallet (Bitpanda) - RDS Resources
+# Random Password Generation
 ################################################################################
 
 resource "random_password" "password" {
@@ -39,33 +11,39 @@ resource "random_password" "password" {
   min_numeric      = 1
 }
 
-# Inject the generated password into the created secret (second apply)
+################################################################################
+# Secret Version with Injected Password
+################################################################################
+
 resource "aws_secretsmanager_secret_version" "digital_wallet_pass" {
-  secret_id = var.dw_secret_id
+  secret_id     = module.secrets["digital_wallet_secret"].id  # Reference the secret from the secrets module
   secret_string = jsonencode({
     username = var.dw_rds_username
-    password = random_password.password.result # Use the password generated above
+    password = random_password.password.result  # Use the generated password
   })
 
-  # Ensure that the random password is injected only after the secret is created
+  # Ensure the secret is created first and password is generated before injecting into the secret
   depends_on = [
-    aws_secretsmanager_secret.digital_wallet_pass, # Ensure the secret is created first
-    random_password.password                       # Ensure password is generated before injecting into the secret
-  ]
-}
-
-# Fetch the secret from AWS Secrets Manager (this step will depend on the secret version)
-data "aws_secretsmanager_secret_version" "digital_wallet_pass" {
-  secret_id = var.dw_secret_id # Use the secret ID from the variable
-
-  # This ensures the secret version is fetched after it is created
-  depends_on = [
-    aws_secretsmanager_secret_version.digital_wallet_pass # Ensure the secret version is available
+    module.secrets["digital_wallet_secret"],  # Ensure the secret is created
+    random_password.password                  # Ensure the password is generated before use
   ]
 }
 
 ################################################################################
-# Digital Wallet (Bitpanda) - RDS Module
+# Fetch Secret Version from AWS Secrets Manager
+################################################################################
+
+data "aws_secretsmanager_secret_version" "digital_wallet_pass" {
+  secret_id = module.secrets["digital_wallet_secret"].id  # Reference the secret from the secrets module
+
+  # Ensure the secret version is available after it's created
+  depends_on = [
+    aws_secretsmanager_secret_version.digital_wallet_pass  # Ensure secret version is available
+  ]
+}
+
+################################################################################
+# Digital Wallet (Bitpanda) - RDS Resources
 ################################################################################
 
 module "digital_wallet" {
@@ -94,6 +72,7 @@ module "digital_wallet" {
   replica_count              = var.replica_count
   force_ssl                  = var.force_ssl
 
+  # Inject the username and password from the secret version
   username = jsondecode(data.aws_secretsmanager_secret_version.digital_wallet_pass.secret_string)["username"]
   password = jsondecode(data.aws_secretsmanager_secret_version.digital_wallet_pass.secret_string)["password"]
 
