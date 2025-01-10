@@ -1,15 +1,35 @@
+module "secrets" {
+  source = "git::https://github.com/rakbank-internal/terraform-aws-secrets-manager-module.git?ref=v1.0.0"
+
+  for_each    = var.secrets
+  name        = lookup(each.value, "name")
+  description = lookup(each.value, "description", "")
+  tags        = lookup(each.value, "tags")
+}
+
+  "digital_wallet_secret" = {
+    name        = "digital-wallet-secret"
+    description = "Secret used by digital wallet dev rds database"
+    tags = {
+      Environment  = "deh-dev",
+      map-migrated = "d-server-03is5ms7k94v6w",
+    }
+  }
+
+alidation failed: .
+╷
+│ Error: Reference to undeclared resource
+│ 
+│   on main.tf line 159, in resource "aws_secretsmanager_secret_version" "digital_wallet_pass":
+│  159:     aws_secretsmanager_secret.digital_wallet_pass, # Ensure the secret is created first
+│ 
+│ A managed resource "aws_secretsmanager_secret" "digital_wallet_pass" has
+│ not been declared in the root module.
+
 ################################################################################
 # Digital Wallet (Bitpanda) - RDS Resources
 ################################################################################
 
-# Create the secret in AWS Secrets Manager using dw_secret_id variable
-resource "aws_secretsmanager_secret" "digital_wallet_pass" {
-  name        = var.dw_secret_id  # Use the secret ID from the variable
-  description = "Digital Wallet DB credentials"
-  tags        = var.tags
-}
-
-# Generate a random password
 resource "random_password" "password" {
   length           = 16
   special          = false
@@ -21,32 +41,33 @@ resource "random_password" "password" {
 
 # Inject the generated password into the created secret (second apply)
 resource "aws_secretsmanager_secret_version" "digital_wallet_pass" {
-  secret_id     = aws_secretsmanager_secret.digital_wallet_pass.id  # Use the secret ID created above
+  secret_id = var.dw_secret_id
   secret_string = jsonencode({
     username = var.dw_rds_username
-    password = random_password.password.result  # Use the password generated above
+    password = random_password.password.result # Use the password generated above
   })
 
   # Ensure that the random password is injected only after the secret is created
   depends_on = [
-    aws_secretsmanager_secret.digital_wallet_pass,  # Ensure the secret is created first
-    random_password.password  # Ensure password is generated before injecting into the secret
+    aws_secretsmanager_secret.digital_wallet_pass, # Ensure the secret is created first
+    random_password.password                       # Ensure password is generated before injecting into the secret
   ]
 }
 
 # Fetch the secret from AWS Secrets Manager (this step will depend on the secret version)
 data "aws_secretsmanager_secret_version" "digital_wallet_pass" {
-  secret_id = var.dw_secret_id  # Use the secret ID from the variable
+  secret_id = var.dw_secret_id # Use the secret ID from the variable
 
   # This ensures the secret version is fetched after it is created
   depends_on = [
-    aws_secretsmanager_secret_version.digital_wallet_pass  # Ensure the secret version is available
+    aws_secretsmanager_secret_version.digital_wallet_pass # Ensure the secret version is available
   ]
 }
 
 ################################################################################
 # Digital Wallet (Bitpanda) - RDS Module
 ################################################################################
+
 module "digital_wallet" {
   source = "git::https://github.com/rakbank-internal/terraform-aws-rds-postgres-module.git?ref=v1.3.0"
 
