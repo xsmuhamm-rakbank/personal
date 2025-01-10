@@ -1,199 +1,44 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>org.springframework.boot</groupId>
-		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.3.2</version>
-		<relativePath/> <!-- lookup parent from repository -->
-	</parent>
-	<groupId>ae.rakbank</groupId>
-	<artifactId>digital-asset</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name>Digital Asset</name>
-	<description>Digital Asset Service</description>
-	<properties>
-		<java.version>21</java.version>
-		<springdoc-openapi-ui>2.5.0</springdoc-openapi-ui>
-		<jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
-		<sonar.tests>src/test/java</sonar.tests>
-		<lombok.version>1.18.32</lombok.version>
-		<lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
-		<org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
-		<otel-observability-core.version>1.0.0-SNAPSHOT</otel-observability-core.version>
-		<awspring.cloud.version>2.4.4</awspring.cloud.version>
-		<shedlock.version>5.13.0</shedlock.version>
-	</properties>
-	<dependencies>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-actuator</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-cache</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-validation</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.liquibase</groupId>
-			<artifactId>liquibase-core</artifactId>
-		</dependency>
+The Terraform configuration you provided outlines the setup for an RDS instance for the Digital Wallet (Bitpanda) and includes some modifications and best practices for handling sensitive data, like the DB password. Here are the key points you mentioned and how they are integrated:
 
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springdoc</groupId>
-			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>${springdoc-openapi-ui}</version>
-		</dependency>
-		<dependency>
-			<groupId>ae.rakbank</groupId>
-			<artifactId>otel-observability-core</artifactId>
-			<version>${otel-observability-core.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.mapstruct</groupId>
-			<artifactId>mapstruct</artifactId>
-			<version>${org.mapstruct.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>io.awspring.cloud</groupId>
-			<artifactId>spring-cloud-starter-aws-secrets-manager-config</artifactId>
-			<version>${awspring.cloud.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>net.javacrumbs.shedlock</groupId>
-			<artifactId>shedlock-spring</artifactId>
-			<version>${shedlock.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>net.javacrumbs.shedlock</groupId>
-			<artifactId>shedlock-provider-jdbc-template</artifactId>
-			<version>${shedlock.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
-		</dependency>
-		<!--Test-->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<scope>runtime</scope>
-    	</dependency>
-	</dependencies>
-	<repositories>
-		<repository>
-			<id>rakbank-artifactory-maven-dev</id>
-			<name>rakbank-artifactory-maven-dev</name>
-			<url>https://rakartifactory.jfrog.io/artifactory/rakbank-artifactory-maven-dev/</url>
-		</repository>
-	</repositories>
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-maven-plugin</artifactId>
-				<configuration>
-					<excludes>
-						<exclude>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</exclude>
-					</excludes>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<source>${java.version}</source>
-					<target>${java.version}</target>
-					<annotationProcessorPaths>
-						<path>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-							<version>${lombok.version}</version>
-						</path>
-						<path>
-							<groupId>org.mapstruct</groupId>
-							<artifactId>mapstruct-processor</artifactId>
-							<version>${org.mapstruct.version}</version>
-						</path>
-						<path>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok-mapstruct-binding</artifactId>
-							<version>${lombok-mapstruct-binding.version}</version>
-						</path>
-					</annotationProcessorPaths>
-				</configuration>
-			</plugin>
-			<plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>${jacoco-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>report</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>jacoco-check</id>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                        <configuration>
-                            <rules>
-                                <rule>
-                                    <element>PACKAGE</element>
-                                    <limits>
-                                        <limit>
-                                            <counter>LINE</counter>
-                                            <value>COVEREDRATIO</value>
-                                            <minimum>0.90</minimum>
-                                        </limit>
-                                        <limit>
-                                            <counter>BRANCH</counter>
-                                            <value>COVEREDRATIO</value>
-                                            <minimum>0.80</minimum>
-                                        </limit>
-                                    </limits>
-                                </rule>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-		</plugins>
-	</build>
+1. **Outputs for New RDS Module**: To enable outputs in the `digital_wallet` module, you can add an `output` block to expose relevant details. For example:
+   ```hcl
+   output "digital_wallet_endpoint" {
+     value = module.digital_wallet.endpoint
+     description = "The endpoint of the Digital Wallet RDS instance"
+   }
 
-</project>
+   output "digital_wallet_db_instance_id" {
+     value = module.digital_wallet.db_instance_id
+     description = "The DB instance ID of the Digital Wallet RDS instance"
+   }
+   ```
+
+2. **Create Secret for DB Password**: This is already implemented with `random_password` for generating a password and storing it in AWS Secrets Manager using `aws_secretsmanager_secret_version`.
+
+3. **`db_subnet_group_name` Same as VPC**: This is handled by setting the `db_subnet_group_name` variable in the `digital_wallet` module. Since the `db_subnet_group_name` is specified as `var.db_subnet_group_name`, you can ensure that it matches the correct subnet group for the VPC.
+
+4. **Separate `db_ingress_cidr_blocks`**: You've set `db_ingress_cidr_blocks` to a separate variable, and it's already using a list of CIDR blocks that can be updated as needed. For example:
+   ```hcl
+   db_ingress_cidr_blocks = [
+     "10.85.128.0/20", "10.85.201.8/32", "10.85.201.10/32", 
+     "10.85.184.0/23", "10.85.139.177/32", "10.85.201.54/32"
+   ]
+   ```
+
+### Terraform Structure
+
+Your configuration for the `digital_wallet` module seems properly set up. Here is a breakdown of the key components:
+
+- **Random Password Generation**: Generates a strong password for the RDS instance.
+  
+- **Secrets Manager Integration**: The DB username and password are securely stored in AWS Secrets Manager, and the password is injected into the RDS module using the secret.
+
+- **Subnet and CIDR Blocks**: The subnets and CIDR blocks are dynamically configured, making it easy to update them as required.
+
+- **DB Engine Configuration**: The parameters like engine version, instance class, storage type, etc., are parameterized, ensuring flexibility across different environments.
+
+### Recommendations:
+- Ensure that the secret ID and other sensitive variables are securely managed in your Terraform environment to avoid exposing sensitive information.
+- You can add more outputs based on your requirements to monitor the RDS instance's state, such as `db_instance_status`, `db_instance_endpoint`, etc.
+
+This setup should help you configure a secure and scalable RDS instance for your Digital Wallet application.
