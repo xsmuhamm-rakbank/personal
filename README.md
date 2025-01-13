@@ -1,34 +1,226 @@
-Terraform validate with trivy............................................Failed
-- hook id: terraform_trivy
-- exit code: 1
-2025-01-10T12:07:40.331Z	INFO	Misconfiguration scanning is enabled
-2025-01-10T12:07:40.331Z	INFO	Need to update the built-in policies
-2025-01-10T12:07:40.331Z	INFO	Downloading the built-in policies...
-74.86 KiB / 74.86 KiB [-----------------------------------------------------------] 100.00% ? p/s 0s
-2025-01-10T12:07:49.421Z	INFO	Detected config files: 12
+FROM eclipse-temurin:19-jdk-alpine as truststore
 
-main.tf (terraform)
-Tests: 2 (SUCCESSES: 1, FAILURES: 1, EXCEPTIONS: 0)
-Failures: 1 (UNKNOWN: 0, LOW: 1, MEDIUM: 0, HIGH: 0, CRITICAL: 0)
-LOW: Secret explicitly uses the default key.
-════════════════════════════════════════
-Secrets Manager encrypts secrets by default using a default key created by AWS. To ensure control and granularity of secret encryption, CMK's should be used explicitly.
 
-See https://avd.aquasec.com/misconfig/avd-aws-0098
-────────────────────────────────────────
- main.tf:141-145
-────────────────────────────────────────
- 141 ┌ resource "aws_secretsmanager_secret" "digital_wallet_pass" {
- 142 │   name        = var.dw_secret_id # Use the secret ID from the variable
- 143 │   description = "Digital Wallet DB credentials"
- 144 │   tags        = var.tags
- 145 └ }
-────────────────────────────────────────
+FROM eclipse-temurin:21-jre-alpine
 
-2025-01-10T12:07:49.478Z	INFO	Misconfiguration scanning is enabled
-2025-01-10T12:07:49.546Z	INFO	Detected config files: 0
-check for merge conflicts................................................Passed
-fix end of files.........................................................Passed
-trim trailing whitespace.................................................Passed
-mixed line ending........................................................Passed
-Error: Process completed with exit code 1.
+# Set the maintainer label
+LABEL maintainer="it-devops@rakbank.ae"
+
+# Update the package list and install the OpenJDK package
+RUN apk update && apk add --no-cache openjdk21-jdk
+
+# Copy the JAR file into the image
+COPY target/deh-experience-retail-accounts-service-*.jar /usr/app/app.jar
+
+# Set the working directory to /usr/app
+WORKDIR /usr/app
+
+# Extract the JAR file, move the dependency JAR, and remove unnecessary directories
+RUN jar xvf app.jar && \
+    mkdir -p /app/libs && \
+    mv BOOT-INF/lib/aws-opentelemetry-agent-1.32.1.jar /app/libs/ && \
+    rm -rf BOOT-INF/ META-INF/ org/
+
+
+ENTRYPOINT ["sh", "-c", "java $TRUSTSTORE_OPTS -jar /usr/app/app.jar"]
+
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.3.2</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>ae.rakbank</groupId>
+	<artifactId>digital-asset</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>Digital Asset</name>
+	<description>Digital Asset Service</description>
+	<properties>
+		<java.version>21</java.version>
+		<springdoc-openapi-ui>2.5.0</springdoc-openapi-ui>
+		<jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
+		<sonar.tests>src/test/java</sonar.tests>
+		<lombok.version>1.18.32</lombok.version>
+		<lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
+		<org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
+		<otel-observability-core.version>1.0.0-SNAPSHOT</otel-observability-core.version>
+		<awspring.cloud.version>2.4.4</awspring.cloud.version>
+		<shedlock.version>5.13.0</shedlock.version>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.liquibase</groupId>
+			<artifactId>liquibase-core</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>${springdoc-openapi-ui}</version>
+		</dependency>
+		<dependency>
+			<groupId>ae.rakbank</groupId>
+			<artifactId>otel-observability-core</artifactId>
+			<version>${otel-observability-core.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mapstruct</groupId>
+			<artifactId>mapstruct</artifactId>
+			<version>${org.mapstruct.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.awspring.cloud</groupId>
+			<artifactId>spring-cloud-starter-aws-secrets-manager-config</artifactId>
+			<version>${awspring.cloud.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>net.javacrumbs.shedlock</groupId>
+			<artifactId>shedlock-spring</artifactId>
+			<version>${shedlock.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>net.javacrumbs.shedlock</groupId>
+			<artifactId>shedlock-provider-jdbc-template</artifactId>
+			<version>${shedlock.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<!--Test-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
+    	</dependency>
+	</dependencies>
+	<repositories>
+		<repository>
+			<id>rakbank-artifactory-maven-dev</id>
+			<name>rakbank-artifactory-maven-dev</name>
+			<url>https://rakartifactory.jfrog.io/artifactory/rakbank-artifactory-maven-dev/</url>
+		</repository>
+	</repositories>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
+					<annotationProcessorPaths>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+							<version>${lombok.version}</version>
+						</path>
+						<path>
+							<groupId>org.mapstruct</groupId>
+							<artifactId>mapstruct-processor</artifactId>
+							<version>${org.mapstruct.version}</version>
+						</path>
+						<path>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok-mapstruct-binding</artifactId>
+							<version>${lombok-mapstruct-binding.version}</version>
+						</path>
+					</annotationProcessorPaths>
+				</configuration>
+			</plugin>
+			<plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>PACKAGE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.00</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.00</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+		</plugins>
+	</build>
+
+</project>
+
