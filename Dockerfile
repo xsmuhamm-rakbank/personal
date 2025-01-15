@@ -1,4 +1,4 @@
-# Stage 1: Truststore Stage (Optional, you can customize it further)
+# Stage 1: Truststore Stage (Optional, you can customize it further
 FROM eclipse-temurin:19-jdk-alpine as truststore
 
 # Stage 2: Production Stage
