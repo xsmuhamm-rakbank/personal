@@ -145,9 +145,9 @@ deployments:
       targetCPUUtilizationPercentage: 75
     containerName: digital-assets-onboarding-container
     image:
-      registry: "<YOUR_IMAGE_REGISTRY>"
-      repository: "<YOUR_IMAGE_REPOSITORY>"
-      tag: "<YOUR_IMAGE_TAG>"
+      registry: "625611776955.dkr.ecr.me-central-1.amazonaws.com"
+      repository: "digital-asset-service"
+      tag: "develop-ae8464b"
     containerPort: 8091
     configMapRef:
       name: digital-assets-onboarding-configmap
@@ -182,8 +182,7 @@ deployments:
         port: 8091
       initialDelaySeconds: 30
       periodSeconds: 10
-    nodeSelector:
-      environment: pt
+    nodeSelector:      project: deh
 # Service #
 service:
   name: digital-assets-onboarding-service
