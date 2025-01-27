@@ -184,3 +184,35 @@ deployments:
       periodSeconds: 10
     nodeSelector:
       environment: pt
+# Service #
+service:
+  name: digital-assets-onboarding-service
+  selector:
+    app: digital-assets-onboarding-service
+  ports:
+    - protocol: TCP
+      port: 8091
+      targetPort: 8091
+  type: ClusterIP
+# External Service #
+externalService:
+  enabled: true
+  name: digital-assets-onboarding-external-service
+  selector:
+    app: digital-assets-onboarding-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8091
+  type: LoadBalancer
+# PDB (Pod Disruption Budget) #
+pdb:
+  enabled: true
+  name: digital-assets-onboarding-pdb
+  namespace: digital-assets
+  minAvailable: 2
+  labels:
+    app: digital-assets-onboarding-service
+  selector:
+    matchLabels:
+      app: digital-assets-onboarding-service
