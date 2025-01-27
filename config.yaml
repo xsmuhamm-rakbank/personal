@@ -1,7 +1,7 @@
 namespace: digital-assets
 # Configmap #
 configmap:
-  name: experience-retail-kyc
+  name: digital-assets-onboarding-configmap
   enabled: true
   data:
     application-pt.properties: |
@@ -85,7 +85,7 @@ configmap:
       </configuration>
 # Deployment #
 deployments:
-  - name: experience-retail-kyc
+  - name: digital-assets-onboarding-service
     namespace: digital-assets
     replicaCount: 3
     autoscaling:
@@ -93,16 +93,16 @@ deployments:
       minReplicas: 3
       maxReplicas: 6
       targetCPUUtilizationPercentage: 75
-    containerName: experience-retail-kyc-container
+    containerName: digital-assets-onboarding-container
     image:
       registry: "<YOUR_IMAGE_REGISTRY>"
       repository: "<YOUR_IMAGE_REPOSITORY>"
       tag: "<YOUR_IMAGE_TAG>"
     containerPort: 8091
     configMapRef:
-      name: experience-retail-kyc
+      name: digital-assets-onboarding-configmap
     secretRef:
-      name: kyc-retail-secrets
+      name: digital-assets-onboarding-secrets
     env:
       - name: OTEL_SERVICE_NAME
         value: "digital-assets-onboarding"
@@ -137,7 +137,7 @@ deployments:
     volumes:
       - name: app-properties
         configMap:
-          name: experience-retail-kyc
+          name: digital-assets-onboarding-configmap
     volumeMounts:
       - name: app-properties
         mountPath: /usr/app/config
@@ -148,9 +148,9 @@ deployments:
             path: logback-spring.xml
 # Service #
 service:
-  name: experience-retail-kyc-service
+  name: digital-assets-onboarding-service
   selector:
-    app: experience-retail-kyc
+    app: digital-assets-onboarding-service
   ports:
     - protocol: TCP
       port: 8091
@@ -159,10 +159,10 @@ service:
 # External Secrets #
 externalsecrets:
   enabled: true
-  name: digital-assets-external-secrets
+  name: digital-assets-onboarding-secrets
   secretStoreRef: aws-secrets-store
   target:
-    name: kyc-retail-secrets
+    name: digital-assets-onboarding-secrets
   data:
     - secretKey: spring.datasource.url
       remoteRef:
@@ -192,3 +192,14 @@ externalsecrets:
       remoteRef:
         key: /digital-assets/onboarding
         property: spring.redis.password
+# PDB (Pod Disruption Budget) #
+pdb:
+  enabled: true
+  name: digital-assets-onboarding-pdb
+  namespace: digital-assets
+  minAvailable: 2
+  labels:
+    app: digital-assets-onboarding-service
+  selector:
+    matchLabels:
+      app: digital-assets-onboarding-service
