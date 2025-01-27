@@ -237,7 +237,7 @@ deployments:
             path: application-pt.properties
           - key: logback-spring.xml
             path: logback-spring.xml
-# Service #
+# Internal Service #
 service:
   name: digital-assets-onboarding-service
   selector:
@@ -247,6 +247,17 @@ service:
       port: 8091
       targetPort: 8091
   type: ClusterIP
+# External Service #
+externalService:
+  enabled: true
+  name: digital-assets-onboarding-external-service
+  selector:
+    app: digital-assets-onboarding-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8091
+  type: LoadBalancer
 # PDB (Pod Disruption Budget) #
 pdb:
   enabled: true
