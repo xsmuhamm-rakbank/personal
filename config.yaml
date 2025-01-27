@@ -203,3 +203,47 @@ pdb:
   selector:
     matchLabels:
       app: digital-assets-onboarding-service
+
+
+digital_wallet_secret - Database secret 
+digital_asset_dev - Digital assets Application secrets 
+
+digital-assets-onboarding 
+
+secrets
+
+spring.datasource.url=jdbc:postgresql://localhost:5432/digital_assets_onboarding_local
+spring.datasource.username=postgres
+spring.datasource.password=
+spring.jpa.properties.hibernate.default_schema=digital_assets_onboarding
+
+param store 
+
+# Batch configuration
+batch.initial-delay.minutes=2
+batch.interval.minutes=240
+batch.shedlock-at-least=PT5M
+batch.shedlock-at-most=PT10M
+batch.enabled=false
+
+# Application Specific Configuration
+digital-assets-onboarding.activityLog.db-logging.enable=true
+
+#Middleware properties
+digital-assets-onboarding.client.middleware.updateCifUrl=http://localhost:9093/kyc-integrator/connectivity/updateCustomer
+
+#NotificationService properties
+digital-assets-onboarding.client.notificationservice.notificationUrl=http://localhost:9093/notificationService/initiate
+
+#ProductEligibility properties
+digital-assets-onboarding.client.producteligibility.eligibilityUrl=http://localhost:9093/complianceCheck/initiate
+
+# retry config
+digital-assets-onboarding.downstream.api.retry.max-attempts=3
+digital-assets-onboarding.downstream.api.retry.max-delay-ms=3000
+
+# Observability configurations
+observability.correlationIdHeader=x-correlation-id
+observability.tracerName=digital-assets-onboarding
+
+
