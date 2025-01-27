@@ -11,10 +11,10 @@ configmap:
       spring.threads.virtual.enabled=true
 
       # Database Configurations
-      spring.datasource.url=${digital_wallet_secret.spring.datasource.url}
-      spring.datasource.username=${digital_wallet_secret.spring.datasource.username}
-      spring.datasource.password=${digital_wallet_secret.spring.datasource.password}
-      spring.jpa.properties.hibernate.default_schema=${digital_wallet_secret.spring.jpa.properties.hibernate.default_schema}
+      spring.datasource.url=${SPRING_DATASOURCE_URL}
+      spring.datasource.username=${SPRING_DATASOURCE_USERNAME}
+      spring.datasource.password=${SPRING_DATASOURCE_PASSWORD}
+      spring.jpa.properties.hibernate.default_schema=${SPRING_JPA_HIBERNATE_SCHEMA}
       spring.jpa.properties.hibernate.ddl-auto=none
       spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
 
@@ -46,17 +46,17 @@ configmap:
       digital-assets-onboarding.activityLog.db-logging.enable=true
 
       # Middleware properties
-      digital-assets-onboarding.client.middleware.updateCifUrl=${digital_asset_dev.digital-assets-onboarding.client.middleware.updateCifUrl}
+      digital-assets-onboarding.client.middleware.updateCifUrl=${MIDDLEWARE_UPDATE_CIF_URL}
 
       # NotificationService properties
-      digital-assets-onboarding.client.notificationservice.notificationUrl=${digital_asset_dev.digital-assets-onboarding.client.notificationservice.notificationUrl}
+      digital-assets-onboarding.client.notificationservice.notificationUrl=${NOTIFICATION_SERVICE_URL}
 
       # ProductEligibility properties
-      digital-assets-onboarding.client.producteligibility.eligibilityUrl=${digital_asset_dev.digital-assets-onboarding.client.producteligibility.eligibilityUrl}
+      digital-assets-onboarding.client.producteligibility.eligibilityUrl=${PRODUCT_ELIGIBILITY_URL}
 
       # Retry Config
-      digital-assets-onboarding.downstream.api.retry.max-attempts=${digital_asset_dev.digital-assets-onboarding.downstream.api.retry.max-attempts}
-      digital-assets-onboarding.downstream.api.retry.max-delay-ms=${digital_asset_dev.digital-assets-onboarding.downstream.api.retry.max-delay-ms}
+      digital-assets-onboarding.downstream.api.retry.max-attempts=${DOWNSTREAM_API_RETRY_MAX_ATTEMPTS}
+      digital-assets-onboarding.downstream.api.retry.max-delay-ms=${DOWNSTREAM_API_RETRY_MAX_DELAY_MS}
 
     logback-spring.xml: |
       <?xml version="1.0" encoding="UTF-8"?>
@@ -82,6 +82,57 @@ configmap:
               </root>
           </springProfile>
       </configuration>
+# External Secrets #
+externalsecrets:
+  enabled: true
+  name: digital-assets-onboarding-external-secrets
+  secretStoreRef:
+    name: aws-secrets-store
+    kind: ClusterSecretStore
+  target:
+    name: digital-assets-onboarding-secrets
+    creationPolicy: Owner
+  data:
+    # Database Secrets
+    - secretKey: spring.datasource.url
+      remoteRef:
+        key: digital_wallet_secret
+        property: spring.datasource.url
+    - secretKey: spring.datasource.username
+      remoteRef:
+        key: digital_wallet_secret
+        property: spring.datasource.username
+    - secretKey: spring.datasource.password
+      remoteRef:
+        key: digital_wallet_secret
+        property: spring.datasource.password
+    - secretKey: spring.jpa.properties.hibernate.default_schema
+      remoteRef:
+        key: digital_wallet_secret
+        property: spring.jpa.properties.hibernate.default_schema
+
+    # Application Secrets
+    - secretKey: digital-assets-onboarding.client.middleware.updateCifUrl
+      remoteRef:
+        key: digital_asset_dev
+        property: digital-assets-onboarding.client.middleware.updateCifUrl
+    - secretKey: digital-assets-onboarding.client.notificationservice.notificationUrl
+      remoteRef:
+        key: digital_asset_dev
+        property: digital-assets-onboarding.client.notificationservice.notificationUrl
+    - secretKey: digital-assets-onboarding.client.producteligibility.eligibilityUrl
+      remoteRef:
+        key: digital_asset_dev
+        property: digital-assets-onboarding.client.producteligibility.eligibilityUrl
+    - secretKey: digital-assets-onboarding.downstream.api.retry.max-attempts
+      remoteRef:
+        key: digital_asset_dev
+        property: digital-assets-onboarding.downstream.api.retry.max-attempts
+    - secretKey: digital-assets-onboarding.downstream.api.retry.max-delay-ms
+      remoteRef:
+        key: digital_asset_dev
+        property: digital-assets-onboarding.downstream.api.retry.max-delay-ms
+
 # Deployment #
 deployments:
   - name: digital-assets-onboarding-service
@@ -100,56 +151,54 @@ deployments:
     containerPort: 8091
     configMapRef:
       name: digital-assets-onboarding-configmap
-    secretRef:
-      name: digital-assets-onboarding-secrets
     env:
-      # Injecting database secrets
+      # Database Secrets from External Secrets
       - name: SPRING_DATASOURCE_URL
         valueFrom:
           secretKeyRef:
-            name: digital-wallet-secret
+            name: digital-assets-onboarding-secrets
             key: spring.datasource.url
       - name: SPRING_DATASOURCE_USERNAME
         valueFrom:
           secretKeyRef:
-            name: digital-wallet-secret
+            name: digital-assets-onboarding-secrets
             key: spring.datasource.username
       - name: SPRING_DATASOURCE_PASSWORD
         valueFrom:
           secretKeyRef:
-            name: digital-wallet-secret
+            name: digital-assets-onboarding-secrets
             key: spring.datasource.password
       - name: SPRING_JPA_HIBERNATE_SCHEMA
         valueFrom:
           secretKeyRef:
-            name: digital-wallet-secret
+            name: digital-assets-onboarding-secrets
             key: spring.jpa.properties.hibernate.default_schema
 
-      # Injecting application secrets
+      # Application Secrets from External Secrets
       - name: MIDDLEWARE_UPDATE_CIF_URL
         valueFrom:
           secretKeyRef:
-            name: digital-asset-dev
+            name: digital-assets-onboarding-secrets
             key: digital-assets-onboarding.client.middleware.updateCifUrl
       - name: NOTIFICATION_SERVICE_URL
         valueFrom:
           secretKeyRef:
-            name: digital-asset-dev
+            name: digital-assets-onboarding-secrets
             key: digital-assets-onboarding.client.notificationservice.notificationUrl
       - name: PRODUCT_ELIGIBILITY_URL
         valueFrom:
           secretKeyRef:
-            name: digital-asset-dev
+            name: digital-assets-onboarding-secrets
             key: digital-assets-onboarding.client.producteligibility.eligibilityUrl
       - name: DOWNSTREAM_API_RETRY_MAX_ATTEMPTS
         valueFrom:
           secretKeyRef:
-            name: digital-asset-dev
+            name: digital-assets-onboarding-secrets
             key: digital-assets-onboarding.downstream.api.retry.max-attempts
       - name: DOWNSTREAM_API_RETRY_MAX_DELAY_MS
         valueFrom:
           secretKeyRef:
-            name: digital-asset-dev
+            name: digital-assets-onboarding-secrets
             key: digital-assets-onboarding.downstream.api.retry.max-delay-ms
 
       - name: TZ
