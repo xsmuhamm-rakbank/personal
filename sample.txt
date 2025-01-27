@@ -1,0 +1,23 @@
+Here are the **exact parameter names** that developers need to add to the secret:
+
+---
+
+### **Database Parameters**
+1. `spring.datasource.url`
+2. `spring.datasource.username`
+3. `spring.datasource.password`
+4. `spring.jpa.properties.hibernate.default_schema`
+
+---
+
+### **Application Parameters**
+1. `middleware.updateCifUrl`
+2. `notificationservice.notificationUrl`
+3. `producteligibility.eligibilityUrl`
+4. `retry.max-attempts`
+5. `retry.max-delay-ms`
+
+---
+
+### Summary
+These parameter names should be added to the secret, ensuring they match exactly as listed above. Let me know if anything else is needed!
