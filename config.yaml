@@ -46,17 +46,17 @@ configmap:
       digital-assets-onboarding.activityLog.db-logging.enable=true
 
       # Middleware properties
-      digital-assets-onboarding.client.middleware.updateCifUrl=file:/etc/secrets/middleware.updateCifUrl
+      digital-assets-onboarding.client.middleware.updateCifUrl=http://localhost:9093/middleware/updateCif
 
       # NotificationService properties
-      digital-assets-onboarding.client.notificationservice.notificationUrl=file:/etc/secrets/notificationservice.notificationUrl
+      digital-assets-onboarding.client.notificationservice.notificationUrl=http://localhost:8096/digital-assets/notifications/api/v1/customer/{cif}
 
       # ProductEligibility properties
-      digital-assets-onboarding.client.producteligibility.eligibilityUrl=file:/etc/secrets/producteligibility.eligibilityUrl
+      digital-assets-onboarding.client.producteligibility.eligibilityUrl=http://localhost:8095/product-eligibility/api/v1/customer/{cif}
 
       # Retry Config
-      digital-assets-onboarding.downstream.api.retry.max-attempts=file:/etc/secrets/retry.max-attempts
-      digital-assets-onboarding.downstream.api.retry.max-delay-ms=file:/etc/secrets/retry.max-delay-ms
+      digital-assets-onboarding.downstream.api.retry.max-attempts=3
+      digital-assets-onboarding.downstream.api.retry.max-delay-ms=3000
 
     logback-spring.xml: |
       <?xml version="1.0" encoding="UTF-8"?>
@@ -67,7 +67,7 @@ configmap:
           <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
           <conversionRule conversionWord="wEx" converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter"/>
 
-          <springProfile name="pt">
+          <springProfile name="dev">
               <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
                   <layout class="ch.qos.logback.classic.PatternLayout">
                       <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n</pattern>
@@ -90,48 +90,26 @@ externalsecrets:
     name: aws-secrets-store
     kind: ClusterSecretStore
   target:
-    name: digital-assets-onboarding-secrets
+    name: /da-dev/digital-assets-onboarding
     creationPolicy: Owner
   data:
     # Database Secrets
     - secretKey: spring.datasource.url
       remoteRef:
-        key: digital_assets_onboarding_secrets
+        key: /da-dev/digital-assets-onboarding
         property: spring.datasource.url
     - secretKey: spring.datasource.username
       remoteRef:
-        key: digital_assets_onboarding_secrets
+        key: /da-dev/digital-assets-onboarding
         property: spring.datasource.username
     - secretKey: spring.datasource.password
       remoteRef:
-        key: digital_assets_onboarding_secrets
+        key: /da-dev/digital-assets-onboarding
         property: spring.datasource.password
     - secretKey: spring.jpa.properties.hibernate.default_schema
       remoteRef:
-        key: digital_assets_onboarding_secrets
+        key: /da-dev/digital-assets-onboarding
         property: spring.jpa.properties.hibernate.default_schema
-
-    # Application Secrets
-    - secretKey: middleware.updateCifUrl
-      remoteRef:
-        key: digital_assets_onboarding_secrets
-        property: middleware.updateCifUrl
-    - secretKey: notificationservice.notificationUrl
-      remoteRef:
-        key: digital_assets_onboarding_secrets
-        property: notificationservice.notificationUrl
-    - secretKey: producteligibility.eligibilityUrl
-      remoteRef:
-        key: digital_assets_onboarding_secrets
-        property: producteligibility.eligibilityUrl
-    - secretKey: retry.max-attempts
-      remoteRef:
-        key: digital_assets_onboarding_secrets
-        property: retry.max-attempts
-    - secretKey: retry.max-delay-ms
-      remoteRef:
-        key: digital_assets_onboarding_secrets
-        property: retry.max-delay-ms
 
 # Deployment #
 deployments:
@@ -154,7 +132,7 @@ deployments:
     volumes:
       - name: secret-volume
         secret:
-          secretName: digital-assets-onboarding-secrets
+          secretName: /da-dev/digital-assets-onboarding
     volumeMounts:
       - name: secret-volume
         mountPath: /etc/secrets
@@ -163,7 +141,7 @@ deployments:
       - name: TZ
         value: "Asia/Dubai"
       - name: SPRING_PROFILES_ACTIVE
-        value: "pt"
+        value: "dev"
     resources:
       limits:
         memory: "2000Mi"
@@ -182,7 +160,8 @@ deployments:
         port: 8091
       initialDelaySeconds: 30
       periodSeconds: 10
-    nodeSelector:      project: deh
+    nodeSelector:
+      project: deh
 # Service #
 service:
   name: digital-assets-onboarding-service
@@ -215,5 +194,3 @@ pdb:
   selector:
     matchLabels:
       app: digital-assets-onboarding-service
-
-/da-dev/digital-assets-onboarding
