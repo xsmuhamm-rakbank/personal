@@ -215,3 +215,5 @@ pdb:
   selector:
     matchLabels:
       app: digital-assets-onboarding-service
+
+/da-dev/digital-assets-onboarding
