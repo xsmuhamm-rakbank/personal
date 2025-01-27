@@ -1,477 +1,64 @@
-namespace: bff-pt
+namespace: digital-assets
 # Configmap #
 configmap:
   name: experience-retail-kyc
   enabled: true
   data:
     application-pt.properties: |
-      server.port=9910
-      server.servlet.context-path=/retail-kyc
+      server.port=8091
+      server.servlet.context-path=/digital-assets/onboarding
+      spring.application.name=digital-assets-onboarding
+      spring.threads.virtual.enabled=true
 
-      spring.application.name=deh-experience-onboarding-kyc-service
-      kyc.database-type=dev
-      server.shutdown=graceful
-      spring.lifecycle.timeout-per-shutdown-phase=10s
-      spring.config.activate.on-cloud-platform=kubernetes
-
-      # Database Connectivity
-      spring.datasource.driverClassName=org.postgresql.Driver
-      spring.datasource.hikari.maximum-pool-size=30
-
-      # JPA settings
-      hibernate.hbm2ddl.auto=none
-      hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-      hibernate.current_session_context_class=thread
-      hibernate.show_sql=true
-
-      # KYC documents folder permissions for Linux, optional for local development/windows must be 9 characters Eg: rwxrwx---
-      efr.storage.accounts.kyc-docs-folder-permissions=
-
-      # KYC documents folder permissions for Linux, optional for local development/windows must be 9 characters Eg: rwxrwx---
-      efr.storage.cards.kyc-docs-folder-permissions=
-
-      # efr token scheduler
-      efr.generate.oauth.token.enable=true
-      efr.ocranalyze.eid.mandatory-checksum-fields=isValidDocNumberCheckDigit,isValidDateOfBirthCheckDigit,isValidDateOfExpiryCheckDigit
-      efr.ocranalyze.eid.mandatory-checksum-fields.enabled=true
-      efr.ocranalyze.passport.mandatory-checksum-fields=isValidDocNumberCheckDigit,isValidDateOfBirthCheckDigit,isValidDateOfExpiryCheckDigit
-      efr.ocranalyze.passport.mandatory-checksum-fields.enabled=true
-      efr.server.checkliveness-endpoint=/api/v3/sdk/liveness
-      efr.server.confirm-entity-check.max-attempts=5
-      efr.server.confirm-entity-endpoint=/rhapi/Onboard/ConfirmEntity
-      efr.server.confirm-indentity-data-element-enhanced-endpoint=/rhapi/Onboard/ConfirmDataElementEnhanced
-      efr.server.confirm-indentity.header.channel-id=1
-      efr.server.login-endpoint=/auth/access/login
-      efr.server.ocranalyze-endpoint=/api/v3/sdk/ocr/analyze
-      efr.server.retry.max-attempts=3
-      efr.server.retry.max-delay-ms=100
-      efr.server.rh-match-check.max-attempts=100
-      efr.server.sdkconfig-endpoint=/sdk/configuration
-      efr.server.settle-identity-endpoint=/rhapi/Onboard/SettleIdentity
-      efr.server.tempkey-endpoint=/rhapi/Mgmt/GetTemporaryKey
-      efr.server.confirm-indentity-enhanced-endpoint=/rhapi/Onboard/ConfirmIdentity
-      efr.should-match-passport=true
-      efr.should-match-dob=true
-      efr.should-match-nationality=true
-      efr.should-send-error-debug-details=true
-      efr.storage.accounts.deh-batch-server-path=C:/Project/rakbank/doc/kyc
-      efr.storage.accounts.kyc-docs.s3storage.internal.bucket-name=rakbank.deh.test.docupload.clean.s3.vpce.amazonaws.com
-      efr.storage.accounts.kyc-docs.upload=S3
-      efr.storage.cards.deh-batch-server-path=C:/Users/rakmo/efr/kyc-batch-server-cards
-      efr.storage.cards.kyc-docs.s3storage.internal.bucket-name=rakbank.deh.test.docupload.clean.s3.vpce.amazonaws.com
-      efr.storage.cards.kyc-docs.upload=S3
-      efr.token.retry.max-attempts=3
-      efr.token.retry.max-delay-ms=100
-      efr.token.retryinterval=720000
-
-      # Loans storage properties
-      efr.storage.loans.kyc-docs-folder-permissions=
-      efr.storage.loans.kyc-docs.upload=File
-      efr.storage.loans.kyc-docs.s3storage.internal.bucket-name=rakbank.deh.test.docupload.prescan.s3.vpce.amazonaws.com
-      efr.storage.loans.deh-batch-server-path=C:/Users/rakmo/efr/kyc-batch-server-cards
-
-      # Logging
-      logging.level.org.springframework=INFO
-      logging.level.ae.rakbank.kycapi=INFO
-      default.kycapi.dir=../
-      spring.output.ansi.enabled=ALWAYS
-
-      # swagger
-      springdoc.swagger-ui.operationsSorter=alpha
-      info.app.title=RAKBANK KYC APIs
-      info.app.description=This service provides APIs for EFR and Perfios integration
-      info.app.version=alpha
-
-      # util configuration
-      util.customer.document.download.path=D:/project/rakbankkyc/efr/kyc-docs
-      util.kyc.data.input.path=/var/kyc/data/input/%s
-      util.kyc.data.output.path=/var/kyc/data/output/%s
+      # Database Configurations
+      spring.datasource.url=jdbc:postgresql://localhost:5432/digital_assets_onboarding_local
+      spring.datasource.username=postgres
+      spring.datasource.password=
+      spring.datasource.hikari.schema=${spring.jpa.properties.hibernate.default_schema}
+      spring.jpa.properties.hibernate.default_schema=digital_assets_onboarding
+      spring.jpa.properties.hibernate.ddl-auto=none
+      spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
 
       # Actuator Configurations
-      management.info.env.enabled=true
       management.endpoints.web.exposure.include=*
       management.endpoint.health.show-details=always
       management.endpoints.web.base-path=/
       management.endpoints.web.path-mapping.health=health-check
+      management.endpoint.health.probes.enabled=true
+      management.endpoint.health.group.readiness.include=db
+      management.info.env.enabled=true
+      management.endpoint.prometheus.enabled=false
 
-      # Metrics
-      management.endpoint.metrics.enable=true
-      management.endpoint.shutdown.enabled=true
-      management.metrics.tags.application=${spring.application.name}
+      # Batch configuration
+      batch.initial-delay.minutes=2
+      batch.interval.minutes=240
+      batch.shedlock-at-least=PT5M
+      batch.shedlock-at-most=PT10M
+      batch.enabled=false
 
-      # DEH Configurations
-      deh.uri.updateProspect.accounts=/retail/products/accounts/prospects/{prospectId}
-      deh.uri.updateProspect.cards=/retail/products/cards/prospects/{prospectId}
-      deh.uri.updateProspect.cards.cli=/retail/products/cards/cli/{prospectId}
-      deh.uri.updateProspect.loans=/retail/products/loans/prospects/{prospectId}
-      deh.oAuth.token.cache.key=deh-access-token
+      # Observability configurations
+      observability.correlationIdHeader=x-correlation-id
+      observability.tracerName=digital-assets-onboarding
 
-      # DEH field validation parameters
-      deh.accounts.kycInfo.maxLength.moi.employerName=200
-      deh.accounts.kycInfo.maxLength.moi.occupationName=200
-      deh.accounts.notifyHost.passportIssueDateSend=false
+      # Swagger Configuration
+      springdoc.swagger-ui.path=/swagger-ui.html
 
-      # MOI Configuration
-      # Cards
-      moi.validation.cards[0].fieldKey=PersonalDetails.MaritalStatus.Code
-      moi.validation.cards[0].isMandatory=false
-      moi.validation.cards[0].defaultValue=
+      # Application Specific Configuration
+      digital-assets-onboarding.activityLog.db-logging.enable=true
 
-      moi.validation.cards[1].fieldKey=PersonalDetails.MaritalStatus.EnglishDescription
-      moi.validation.cards[1].isMandatory=false
-      moi.validation.cards[1].defaultValue=
+      # Middleware properties
+      digital-assets-onboarding.client.middleware.updateCifUrl=http://localhost:9093/middleware/updateCif
 
-      moi.validation.cards[2].fieldKey=PersonalDetails.Gender.Code
-      moi.validation.cards[2].isMandatory=true
-      moi.validation.cards[2].defaultValue=
+      # NotificationService properties
+      digital-assets-onboarding.client.notificationservice.notificationUrl=http://localhost:8096/digital-assets/notifications/api/v1/customer/{cif}
 
-      moi.validation.cards[3].fieldKey=PersonalDetails.Gender.EnglishDescription
-      moi.validation.cards[3].isMandatory=true
-      moi.validation.cards[3].defaultValue=
+      # ProductEligibility properties
+      digital-assets-onboarding.client.producteligibility.eligibilityUrl=http://localhost:8095/product-eligibility/api/v1/customer/{cif}
 
-      moi.validation.cards[4].fieldKey=Passport.placeOfBirth
-      moi.validation.cards[4].isMandatory=false
-      moi.validation.cards[4].defaultValue=
+      # Retry Config
+      digital-assets-onboarding.downstream.api.retry.max-attempts=3
+      digital-assets-onboarding.downstream.api.retry.max-delay-ms=3000
 
-      moi.validation.cards[5].fieldKey=PersonalDetails.MotherName
-      moi.validation.cards[5].isMandatory=false
-      moi.validation.cards[5].defaultValue=
-
-      moi.validation.cards[6].fieldKey=ResidencyDetails.ResidencyNumber
-      moi.validation.cards[6].isMandatory=false
-      moi.validation.cards[6].defaultValue=
-
-      moi.validation.cards[7].fieldKey=ResidencyDetails.IssuePlace
-      moi.validation.cards[7].isMandatory=false
-      moi.validation.cards[7].defaultValue=
-
-      moi.validation.cards[8].fieldKey=ResidencyDetails.IssueDate
-      moi.validation.cards[8].isMandatory=false
-      moi.validation.cards[8].defaultValue=
-
-      moi.validation.cards[9].fieldKey=ResidencyDetails.ExpiryDate
-      moi.validation.cards[9].isMandatory=false
-      moi.validation.cards[9].defaultValue=
-
-      moi.validation.cards[10].fieldKey=SponsorDetails.Name
-      moi.validation.cards[10].isMandatory=false
-      moi.validation.cards[10].defaultValue=
-
-      moi.validation.cards[11].fieldKey=IdentityCardDetails.RegistrantNumber
-      moi.validation.cards[11].isMandatory=true
-      moi.validation.cards[11].defaultValue=
-
-      moi.validation.cards[12].fieldKey=IdentityCardDetails.IssueDate
-      moi.validation.cards[12].isMandatory=true
-      moi.validation.cards[12].defaultValue=
-
-      moi.validation.cards[13].fieldKey=IdentityCardDetails.ExpiryDate
-      moi.validation.cards[13].isMandatory=true
-      moi.validation.cards[13].defaultValue=
-
-      moi.validation.cards[14].fieldKey=EID.daysToExpiry
-      moi.validation.cards[14].isMandatory=false
-      moi.validation.cards[14].defaultValue=
-
-      moi.validation.cards[15].fieldKey=Passport.daysToExpiry
-      moi.validation.cards[15].isMandatory=false
-      moi.validation.cards[15].defaultValue=
-
-      moi.validation.cards[16].fieldKey=PersonalDetails.BirthDate
-      moi.validation.cards[16].isMandatory=true
-      moi.validation.cards[16].defaultValue=
-
-      moi.validation.cards[17].fieldKey=PersonalDetails.Nationality.Code
-      moi.validation.cards[17].isMandatory=true
-      moi.validation.cards[17].defaultValue=
-
-      #Accounts
-      moi.validation.accounts[0].fieldKey=PersonalDetails.BirthDate
-      moi.validation.accounts[0].isMandatory=true
-      moi.validation.accounts[0].defaultValue=
-
-      moi.validation.accounts[1].fieldKey=PersonalDetails.Gender.Code
-      moi.validation.accounts[1].isMandatory=true
-      moi.validation.accounts[1].defaultValue=
-
-      moi.validation.accounts[2].fieldKey=PersonalDetails.PlaceOfBirth
-      moi.validation.accounts[2].isMandatory=true
-      moi.validation.accounts[2].defaultValue=
-
-      moi.validation.accounts[3].fieldKey=PersonalDetails.Nationality.Code
-      moi.validation.accounts[3].isMandatory=true
-      moi.validation.accounts[3].defaultValue=
-
-      moi.validation.accounts[4].fieldKey=SponsorDetails.Name
-      moi.validation.accounts[4].isMandatory=false
-      moi.validation.accounts[4].defaultValue=
-
-      moi.validation.accounts[5].fieldKey=EID.issuedCountryIso2
-      moi.validation.accounts[5].isMandatory=false
-      moi.validation.accounts[5].defaultValue=
-
-      moi.validation.accounts[6].fieldKey=IdentityCardDetails.RegistrantNumber
-      moi.validation.accounts[6].isMandatory=true
-      moi.validation.accounts[6].defaultValue=
-
-      moi.validation.accounts[7].fieldKey=IdentityCardDetails.ExpiryDate
-      moi.validation.accounts[7].isMandatory=true
-      moi.validation.accounts[7].defaultValue=
-
-      moi.validation.accounts[8].fieldKey=IdentityCardDetails.IssueDate
-      moi.validation.accounts[8].isMandatory=true
-      moi.validation.accounts[8].defaultValue=
-
-      moi.validation.accounts[9].fieldKey=PassportDetails.PassportNumber
-      moi.validation.accounts[9].isMandatory=true
-      moi.validation.accounts[9].defaultValue=
-
-      moi.validation.accounts[10].fieldKey=PassportDetails.ExpiryDate
-      moi.validation.accounts[10].isMandatory=true
-      moi.validation.accounts[10].defaultValue=
-
-      moi.validation.accounts[11].fieldKey=PassportDetails.IssueDate
-      moi.validation.accounts[11].isMandatory=false
-      moi.validation.accounts[11].defaultValue=
-
-      moi.validation.accounts[12].fieldKey=Passport.issuedCountryIso2
-      moi.validation.accounts[12].isMandatory=false
-      moi.validation.accounts[12].defaultValue=AE
-
-      moi.validation.accounts[13].fieldKey=Passport.issuedPlace
-      moi.validation.accounts[13].isMandatory=false
-      moi.validation.accounts[13].defaultValue=
-
-      moi.validation.accounts[14].fieldKey=ResidencyDetails.ResidencyNumber
-      moi.validation.accounts[14].isMandatory=false
-      moi.validation.accounts[14].defaultValue=
-
-      moi.validation.accounts[15].fieldKey=ResidencyDetails.ExpiryDate
-      moi.validation.accounts[15].isMandatory=false
-      moi.validation.accounts[15].defaultValue=
-
-      moi.validation.accounts[16].fieldKey=ResidencyDetails.IssueDate
-      moi.validation.accounts[16].isMandatory=false
-      moi.validation.accounts[16].defaultValue=
-
-      moi.validation.accounts[17].fieldKey=ResidencyDetails.IssuePlace
-      moi.validation.accounts[17].isMandatory=false
-      moi.validation.accounts[17].defaultValue=
-
-      # Loans
-      moi.validation.loans[0].fieldKey=PersonalDetails.MaritalStatus.Code
-      moi.validation.loans[0].isMandatory=false
-      moi.validation.loans[0].defaultValue=
-
-      moi.validation.loans[1].fieldKey=PersonalDetails.MaritalStatus.EnglishDescription
-      moi.validation.loans[1].isMandatory=false
-      moi.validation.loans[1].defaultValue=
-
-      moi.validation.loans[2].fieldKey=PersonalDetails.Gender.Code
-      moi.validation.loans[2].isMandatory=true
-      moi.validation.loans[2].defaultValue=
-
-      moi.validation.loans[3].fieldKey=PersonalDetails.Gender.EnglishDescription
-      moi.validation.loans[3].isMandatory=true
-      moi.validation.loans[3].defaultValue=
-
-      moi.validation.loans[4].fieldKey=PersonalDetails.MotherName
-      moi.validation.loans[4].isMandatory=false
-      moi.validation.loans[4].defaultValue=
-
-      moi.validation.loans[5].fieldKey=ResidencyDetails.ResidencyNumber
-      moi.validation.loans[5].isMandatory=false
-      moi.validation.loans[5].defaultValue=
-
-      moi.validation.loans[6].fieldKey=ResidencyDetails.IssuePlace
-      moi.validation.loans[6].isMandatory=false
-      moi.validation.loans[6].defaultValue=
-
-      moi.validation.loans[7].fieldKey=ResidencyDetails.IssueDate
-      moi.validation.loans[7].isMandatory=false
-      moi.validation.loans[7].defaultValue=
-
-      moi.validation.loans[8].fieldKey=ResidencyDetails.ExpiryDate
-      moi.validation.loans[8].isMandatory=false
-      moi.validation.loans[8].defaultValue=
-
-      moi.validation.loans[9].fieldKey=SponsorDetails.Name
-      moi.validation.loans[9].isMandatory=false
-      moi.validation.loans[9].defaultValue=
-
-      moi.validation.loans[10].fieldKey=IdentityCardDetails.RegistrantNumber
-      moi.validation.loans[10].isMandatory=true
-      moi.validation.loans[10].defaultValue=
-
-      moi.validation.loans[11].fieldKey=IdentityCardDetails.IssueDate
-      moi.validation.loans[11].isMandatory=true
-      moi.validation.loans[11].defaultValue=
-
-      moi.validation.loans[12].fieldKey=IdentityCardDetails.ExpiryDate
-      moi.validation.loans[12].isMandatory=true
-      moi.validation.loans[12].defaultValue=
-
-      moi.validation.loans[13].fieldKey=PassportDetails.ExpiryDate
-      moi.validation.loans[13].isMandatory=false
-      moi.validation.loans[13].defaultValue=
-
-      moi.validation.loans[14].fieldKey=PassportDetails.IssueDate
-      moi.validation.loans[14].isMandatory=false
-      moi.validation.loans[14].defaultValue=
-
-      moi.validation.loans[15].fieldKey=PersonalDetails.Nationality.Code
-      moi.validation.loans[15].isMandatory=true
-      moi.validation.loans[15].defaultValue=
-
-      moi.validation.loans[16].fieldKey=PersonalDetails.Nationality.EnglishDescription
-      moi.validation.loans[16].isMandatory=true
-      moi.validation.loans[16].defaultValue=
-
-      moi.validation.loans[17].fieldKey=PersonalDetails.Nationality.ArabicDescription
-      moi.validation.loans[17].isMandatory=false
-      moi.validation.loans[17].defaultValue=
-
-      moi.validation.loans[18].fieldKey=PassportDetails.PassportCountryCode
-      moi.validation.loans[18].isMandatory=false
-      moi.validation.loans[18].defaultValue=
-
-      moi.validation.loans[19].fieldKey=PersonalDetails.BirthDate
-      moi.validation.loans[19].isMandatory=true
-      moi.validation.loans[19].defaultValue=
-
-      moi.validation.loans[20].fieldKey=PassportDetails.IssuingAuthority
-      moi.validation.loans[20].isMandatory=false
-      moi.validation.loans[20].defaultValue=
-
-      moi.validation.loans[21].fieldKey=PassportDetails.PassportNumber
-      moi.validation.loans[21].isMandatory=false
-      moi.validation.loans[21].defaultValue=
-
-      moi.validation.loans[22].fieldKey=ProfessionalDetails.QualificationLevel.Code
-      moi.validation.loans[22].isMandatory=false
-      moi.validation.loans[22].defaultValue=
-
-      moi.validation.loans[23].fieldKey=ProfessionalDetails.Occupation.EnglishDescription
-      moi.validation.loans[23].isMandatory=false
-      moi.validation.loans[23].defaultValue=
-
-      moi.validation.loans[24].fieldKey=ResidencyDetails.ResidencyType.Code
-      moi.validation.loans[24].isMandatory=false
-      moi.validation.loans[24].defaultValue=
-
-      moi.validation.loans[25].fieldKey=ResidencyDetails.ResidencyType.EnglishDescription
-      moi.validation.loans[25].isMandatory=false
-      moi.validation.loans[25].defaultValue=
-
-      moi.validation.loans[26].fieldKey=ProfessionalDetails.QualificationLevel.EnglishDescription
-      moi.validation.loans[26].isMandatory=false
-      moi.validation.loans[26].defaultValue=
-
-      moi.validation.loans[27].fieldKey=ProfessionalDetails.Occupation.Code
-      moi.validation.loans[27].isMandatory=false
-      moi.validation.loans[27].defaultValue=
-
-      moi.validation.loans[28].fieldKey=SponsorDetails.SponsorType.Code
-      moi.validation.loans[28].isMandatory=false
-      moi.validation.loans[28].defaultValue=
-
-      moi.validation.loans[29].fieldKey=SponsorDetails.Number
-      moi.validation.loans[29].isMandatory=false
-      moi.validation.loans[29].defaultValue=
-
-      moi.validation.loans[30].fieldKey=AddressDetails.PhoneNumber
-      moi.validation.loans[30].isMandatory=false
-      moi.validation.loans[30].defaultValue=
-
-      moi.validation.loans[31].fieldKey=AddressDetails.MobilePhoneNumber
-      moi.validation.loans[31].isMandatory=false
-      moi.validation.loans[31].defaultValue=
-
-      moi.validation.loans[32].fieldKey=AddressDetails.POBox
-      moi.validation.loans[32].isMandatory=false
-      moi.validation.loans[32].defaultValue=
-
-      moi.validation.loans[33].fieldKey=AddressDetails.EmailAddress
-      moi.validation.loans[33].isMandatory=false
-      moi.validation.loans[33].defaultValue=
-
-      moi.validation.loans[34].fieldKey=PersonalDetails.FullName
-      moi.validation.loans[34].isMandatory=false
-      moi.validation.loans[34].defaultValue=
-
-      moi.validation.loans[35].fieldKey=PersonalDetails.Nationality.ArabicDescription
-      moi.validation.loans[35].isMandatory=false
-      moi.validation.loans[35].defaultValue=
-
-      moi.validation.loans[36].fieldKey=PersonalDetails.MotherName
-      moi.validation.loans[36].isMandatory=false
-      moi.validation.loans[36].defaultValue=
-
-      moi.validation.loans[37].fieldKey=PersonalDetails.PlaceOfBirth
-      moi.validation.loans[37].isMandatory=false
-      moi.validation.loans[37].defaultValue=
-
-      moi.validation.loans[38].fieldKey=EID.daysToExpiry
-      moi.validation.loans[38].isMandatory=false
-      moi.validation.loans[38].defaultValue=
-
-      moi.validation.loans[39].fieldKey=EID.nationalityIso2
-      moi.validation.loans[39].isMandatory=false
-      moi.validation.loans[39].defaultValue=
-
-      moi.validation.loans[40].fieldKey=EID.nationalityIso3
-      moi.validation.loans[40].isMandatory=false
-      moi.validation.loans[40].defaultValue=
-
-      moi.validation.loans[41].fieldKey=EID.nationalityFull
-      moi.validation.loans[41].isMandatory=false
-      moi.validation.loans[41].defaultValue=
-
-      moi.validation.loans[42].fieldKey=Passport.daysToExpiry
-      moi.validation.loans[42].isMandatory=false
-      moi.validation.loans[42].defaultValue=
-
-      moi.validation.loans[43].fieldKey=Passport.issuedDate
-      moi.validation.loans[43].isMandatory=false
-      moi.validation.loans[43].defaultValue=
-
-      moi.validation.loans[44].fieldKey=Passport.placeOfBirth
-      moi.validation.loans[44].isMandatory=false
-      moi.validation.loans[44].defaultValue=
-
-      moi.validation.loans[45].fieldKey=Passport.ppIssuingAuthority
-      moi.validation.loans[45].isMandatory=false
-      moi.validation.loans[45].defaultValue=
-
-      moi.validation.loans[46].fieldKey=Passport.dob
-      moi.validation.loans[46].isMandatory=false
-      moi.validation.loans[46].defaultValue=
-
-      # recaptcha
-      recaptcha.enabled=false
-      recaptcha.enabled-urls=/efr/transactions/**/identity
-      recaptcha.score=0.5
-      recaptcha.siteVerifyEndpoint=/recaptcha/api/siteverify
-
-      recaptcha.error.missing-input-secret=The secret parameter is missing
-      recaptcha.error.invalid-input-secret=The secret parameter is invalid or malformed
-      recaptcha.error.missing-input-response=The response parameter is missing
-      recaptcha.error.invalid-input-response=The response parameter is invalid or malformed
-      recaptcha.error.bad-request=The request is invalid or malformed
-      recaptcha.error.timeout-or-duplicate=The recaptcha token is time out or duplicate
-
-      # SBO
-      sbo.auth.status.update.uri.path=/api/v1/onboarding/auth-status
-      sbo.deh.auth.token.uri.path=/api/v1/onboarding/deh-token
-      sbo.mfp.auth.token.uri.path=/api/v1/mfp-token
-
-      # redis properties
-      spring.redis.ssl=true
-      spring.redis.timeout=60
-
-      jobs.processGenerateEFROAuthToken.shedlock.name=ProcessGenerateEFROAuthToken
-      jobs.processGenerateEFROAuthToken.shedlock.lockAtMostFor=PT15M
-      jobs.processGenerateEFROAuthToken.shedlock.lockAtLeastFor=PT5M
     logback-spring.xml: |
       <?xml version="1.0" encoding="UTF-8"?>
       <configuration>
@@ -483,51 +70,24 @@ configmap:
 
           <springProfile name="pt">
               <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
-                  <layout class="ae.rakbank.kyc.logging.PatternMaskingLayout">
-                      <jsonFormatter class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
-                          <prettyPrint>false</prettyPrint>
-                      </jsonFormatter>
-                      <timestampFormat>yyyy-MM-dd'T'HH:mm:ss.SSS'Z'</timestampFormat>
-                      <timestampFormatTimezoneId>Asia/Dubai</timestampFormatTimezoneId>
-
-                      <appendLineSeparator>true</appendLineSeparator>
-                      <maskPattern>${passwordLog}</maskPattern>
-                      <maskPattern>${passwordJson}</maskPattern>
-                      <maskPattern>${usernameMaskLog}</maskPattern>
-                      <maskPattern>${username}</maskPattern>
-                      <maskPattern>${primaryAccessCodeMaskLog}</maskPattern>
-                      <maskPattern>${emailMaskLog}</maskPattern>
-                      <maskPattern>${email}</maskPattern>
-                      <maskPattern>${mobileUrl}</maskPattern>
-                      <maskPattern>${otpMaskLog}</maskPattern>
-                      <maskPattern>${userIdMaskLog}</maskPattern>
-                      <maskPattern>${clientSecretMaskLog}</maskPattern>
-                      <maskPattern>${mobileMaskLog}</maskPattern>
-                      <maskPattern>${mobileNo}</maskPattern>
-                      <maskPattern>${fullNameMaskLog}</maskPattern>
-                      <maskPattern>${companyNameMaskLog}</maskPattern>
-                      <maskPattern>${logoImageKeyMaskLog}</maskPattern>
-                      <maskPattern>${profileImageKeyMaskLog}</maskPattern>
-                      <maskPattern>${eidNumberMaskLog}</maskPattern>
-                      <maskPattern>${passportNumberMaskLog}</maskPattern>
+                  <layout class="ch.qos.logback.classic.PatternLayout">
+                      <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n</pattern>
                   </layout>
               </appender>
 
-              <logger name="ae.rakbank.kyc" additivity="false" level="INFO">
-                  <appender-ref ref="Console"/>
-              </logger>
+              <logger name="org.springframework" level="INFO"/>
+              <logger name="digital-assets-onboarding" level="DEBUG"/>
 
-              <root level="info">
+              <root level="INFO">
                   <appender-ref ref="Console"/>
               </root>
           </springProfile>
       </configuration>
-## DEPLOYMENT  ##
+# Deployment #
 deployments:
   - name: experience-retail-kyc
-    namespace: bff-pt
+    namespace: digital-assets
     replicaCount: 3
-    ## HPA ##
     autoscaling:
       enabled: true
       minReplicas: 3
@@ -535,67 +95,25 @@ deployments:
       targetCPUUtilizationPercentage: 75
     containerName: experience-retail-kyc-container
     image:
-      registry: "625611776955.dkr.ecr.me-central-1.amazonaws.com"
-      repository: "deh-exp-onboarding-kyc"
-      tag: "releasedeh-upgrade-4efb424"
-    containerPort: 9910
+      registry: "<YOUR_IMAGE_REGISTRY>"
+      repository: "<YOUR_IMAGE_REPOSITORY>"
+      tag: "<YOUR_IMAGE_TAG>"
+    containerPort: 8091
     configMapRef:
       name: experience-retail-kyc
     secretRef:
       name: kyc-retail-secrets
     env:
       - name: OTEL_SERVICE_NAME
-        value: "deh-experience-onboarding-kyc-service"
+        value: "digital-assets-onboarding"
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
-        value: http://aws-eks-otel-collector-collector.opentelemetry-operator-system.svc.cluster.local:4317
-      - name: OTEL_RESOURCE_PROVIDERS_AWS_ENABLED
-        value: "true"
-      - name: OTEL_TRACES_EXPORTER
-        value: "otlp"
-      - name: OTEL_METRICS_EXPORTER
-        value: "none"
-      - name: OTEL_LOGS_EXPORTER
-        value: "none"
-      - name: OTEL_EXPORTER_OTLP_TRACES_PROTOCOL
-        value: "grpc"
-      - name: OTEL_TRACES_SAMPLER
-        value: "always_on"
-      - name: OTEL_PROPAGATORS
-        value: "tracecontext,baggage,xray"
-      - name: OTEL_RESOURCE_ATTRIBUTES
-        value: "service.name=deh-experience-onboarding-kyc-service"
-      - name: OTEL_IMR_EXPORT_INTERVAL
-        value: "10000"
-      - name: OTEL_RESOURCE_ATTRIBUTES_DEPLOYMENT_ENVIRONMENT
-        value: "pt"
-      - name: OTEL_SDK_DISABLED
-        value: "false"
+        value: "<YOUR_OTEL_ENDPOINT>"
       - name: AWS_REGION
         value: "me-central-1"
-      - name: LISTEN_ADDRESS
-        value: "0.0.0.0:9904"
       - name: TZ
         value: "Asia/Dubai"
-      - name: FILE_ENCODING
-        value: "UTF-8"
-      - name: USER_TIMEZONE
-        value: "Asia/Dubai"
-      - name: SPRING_JMX_ENABLED
-        value: "false"
       - name: SPRING_PROFILES_ACTIVE
         value: "pt"
-      - name: LOGGER_MASKING_FLAG
-        value: "true"
-      - name: LOGGING_CONFIG
-        value: config/logback-spring.xml
-      - name: SPRINGDOC_APIDOCS_ENABLED
-        value: "true"
-      - name: SPRINGDOC_SWAGGERUI_ENABLED
-        value: "true"
-      - name: JAVA_TOOL_OPTIONS
-        value: >
-          -javaagent:/app/libs/aws-opentelemetry-agent-1.32.1.jar -XX:MaxDirectMemorySize=10M -XX:MaxMetaspaceSize=162200K -XX:ReservedCodeCacheSize=240M -Xss1M -Xmx1576551K
-
     resources:
       limits:
         memory: "2000Mi"
@@ -604,265 +122,73 @@ deployments:
         memory: "2000Mi"
     livenessProbe:
       httpGet:
-        path: /retail-kyc/health-check/liveness
-        port: 9910
+        path: /digital-assets/onboarding/health-check/liveness
+        port: 8091
       initialDelaySeconds: 5
       periodSeconds: 10
     readinessProbe:
       httpGet:
-        path: /retail-kyc/health-check/readiness
-        port: 9910
+        path: /digital-assets/onboarding/health-check/readiness
+        port: 8091
       initialDelaySeconds: 30
       periodSeconds: 10
     nodeSelector:
       environment: pt
-      application: deh-pt
-      type: general-purpose
-      project: deh
-      ns: core
-    topologySpreadConstraints:
-      - maxSkew: 1
-        topologyKey: "topology.kubernetes.io/zone"
-        whenUnsatisfiable: DoNotSchedule
-        minDomains: 3
-        labelSelector:
-          matchLabels:
-            app: experience-retail-kyc
     volumes:
-      - name: pt-properties
+      - name: app-properties
         configMap:
           name: experience-retail-kyc
     volumeMounts:
-      - name: pt-properties
-        readOnly: true
+      - name: app-properties
         mountPath: /usr/app/config
         items:
           - key: application-pt.properties
             path: application-pt.properties
           - key: logback-spring.xml
             path: logback-spring.xml
-    labels:
-      name: experience-retail-kyc
-      app: experience-retail-kyc
-      deployment-str: rollingupdate
-      version: v1
-      env: pt
-      type: backend
-## SERVICE ##
+# Service #
 service:
   name: experience-retail-kyc-service
   selector:
     app: experience-retail-kyc
   ports:
     - protocol: TCP
-      port: 9910
-      targetPort: 9910
+      port: 8091
+      targetPort: 8091
   type: ClusterIP
-## Gateway##
-## Gateway is created as part of retail accounts deployment. One gateway is sufficent per namespace
-
-## destination rules##
-destinationRule:
-  enabled: true
-  name: retail-kyc-destination-rule
-  host: experience-retail-kyc-service
-  subsets:
-    - name: v1
-      labels:
-        version: v1
-    - name: v2
-      labels:
-        version: v2
-## Virtual service##
-virtualService:
-  enabled: true
-  name: kyc-retail-virtual-service
-  hosts:
-    - "experience-pt.rakbanktst.ae"
-  gateway: experience-gateway
-  http:
-    # Default route if no x-user-group header is provided
-    - uri: "/retail-kyc"
-      route:
-        - host: experience-retail-kyc-service
-          subset: v1
-          port: 9910
-      retries:
-        attempts: 3
-        perTryTimeout: "60s"
-        retryOn: "5xx,connect-failure"
-## external secrets ##
+# External Secrets #
 externalsecrets:
   enabled: true
-  name: kyc-retail-external-secrets
+  name: digital-assets-external-secrets
   secretStoreRef: aws-secrets-store
   target:
     name: kyc-retail-secrets
   data:
-    - secretKey: signing.key
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: signing.key
     - secretKey: spring.datasource.url
       remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
+        key: /digital-assets/onboarding
         property: spring.datasource.url
     - secretKey: spring.datasource.username
       remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
+        key: /digital-assets/onboarding
         property: spring.datasource.username
     - secretKey: spring.datasource.password
       remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
+        key: /digital-assets/onboarding
         property: spring.datasource.password
-    - secretKey: efr.server.base-url
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: efr.server.base-url
-    - secretKey: efr.server.ocr-base-url
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: efr.server.ocr-base-url
-    - secretKey: efr.server.liveness.base-url
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: efr.server.liveness.base-url
-    - secretKey: efr.server.email
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: efr.server.email
-    - secretKey: efr.server.password
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: efr.server.password
-    - secretKey: recaptcha.baseUrl
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: recaptcha.baseUrl
-    - secretKey: recaptcha.secret
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: recaptcha.secret
-    - secretKey: recaptcha.siteKey
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: recaptcha.siteKey
-    - secretKey: deh.oAuth.username
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: deh.oAuth.username
-    - secretKey: deh.baseUrl.oAuth
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: deh.baseUrl.oAuth
-    - secretKey: deh.baseUrl.accounts
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: deh.baseUrl.accounts
-    - secretKey: deh.baseUrl.accounts.v2url
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: deh.baseUrl.accounts.v2url
-    - secretKey: deh.baseUrl.cards
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: deh.baseUrl.cards
-    - secretKey: deh.baseUrl.cards.v2url
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: deh.baseUrl.cards.v2url
-    - secretKey: deh.baseUrl.loans
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: deh.baseUrl.loans
-    - secretKey: config.clientId.deh
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: config.clientId.deh
-    - secretKey: config.clientSecret.deh
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: config.clientSecret.deh
-    - secretKey: config.expiry.deh
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: config.expiry.deh
-    - secretKey: config.clientId.mw
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: config.clientId.mw
-    - secretKey: config.clientSecret.mw
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: config.clientSecret.mw
-    - secretKey: config.expiry.mw
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: config.expiry.mw
-    - secretKey: config.clientId.support
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: config.clientId.support
-    - secretKey: config.clientSecret.support
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: config.clientSecret.support
-    - secretKey: config.expiry.support
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: config.expiry.support
-    - secretKey: config.clientId.ipo
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: config.clientId.ipo
-    - secretKey: config.clientSecret.ipo
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: config.clientSecret.ipo
-    - secretKey: config.expiry.ipo
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: config.expiry.ipo
-    - secretKey: sbo.base.url
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: sbo.base.url
-    - secretKey: recaptcha.dummy.token
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: recaptcha.dummy.token
     - secretKey: spring.redis.host
       remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
+        key: /digital-assets/onboarding
         property: spring.redis.host
     - secretKey: spring.redis.port
       remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
+        key: /digital-assets/onboarding
         property: spring.redis.port
     - secretKey: spring.redis.username
       remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
+        key: /digital-assets/onboarding
         property: spring.redis.username
     - secretKey: spring.redis.password
       remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
+        key: /digital-assets/onboarding
         property: spring.redis.password
-    - secretKey: spring.datasource.schema
-      remoteRef:
-        key: /deh-pt/exp-onboarding-kyc-retail
-        property: spring.datasource.schema
-# PDB#
-pdb:
-  enabled: false
-  name: experience-retail-kyc-pdb
-  namespace: bff-pt
-  minAvailable: 3
-  labels:
-    app: experience-retail-kyc
-  selector:
-    matchLabels:
-      app: experience-retail-kyc
-image:
-  tag: develop-4d4d06d
-terminationGracePeriodSeconds: 70
-
