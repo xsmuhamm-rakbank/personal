@@ -11,10 +11,10 @@ configmap:
       spring.threads.virtual.enabled=true
 
       # Database Configurations
-      spring.datasource.url=${SPRING_DATASOURCE_URL}
-      spring.datasource.username=${SPRING_DATASOURCE_USERNAME}
-      spring.datasource.password=${SPRING_DATASOURCE_PASSWORD}
-      spring.jpa.properties.hibernate.default_schema=${SPRING_JPA_HIBERNATE_SCHEMA}
+      spring.datasource.url=file:/etc/secrets/spring.datasource.url
+      spring.datasource.username=file:/etc/secrets/spring.datasource.username
+      spring.datasource.password=file:/etc/secrets/spring.datasource.password
+      spring.jpa.properties.hibernate.default_schema=file:/etc/secrets/spring.jpa.properties.hibernate.default_schema
       spring.jpa.properties.hibernate.ddl-auto=none
       spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
 
@@ -46,17 +46,17 @@ configmap:
       digital-assets-onboarding.activityLog.db-logging.enable=true
 
       # Middleware properties
-      digital-assets-onboarding.client.middleware.updateCifUrl=${MIDDLEWARE_UPDATE_CIF_URL}
+      digital-assets-onboarding.client.middleware.updateCifUrl=file:/etc/secrets/middleware.updateCifUrl
 
       # NotificationService properties
-      digital-assets-onboarding.client.notificationservice.notificationUrl=${NOTIFICATION_SERVICE_URL}
+      digital-assets-onboarding.client.notificationservice.notificationUrl=file:/etc/secrets/notificationservice.notificationUrl
 
       # ProductEligibility properties
-      digital-assets-onboarding.client.producteligibility.eligibilityUrl=${PRODUCT_ELIGIBILITY_URL}
+      digital-assets-onboarding.client.producteligibility.eligibilityUrl=file:/etc/secrets/producteligibility.eligibilityUrl
 
       # Retry Config
-      digital-assets-onboarding.downstream.api.retry.max-attempts=${DOWNSTREAM_API_RETRY_MAX_ATTEMPTS}
-      digital-assets-onboarding.downstream.api.retry.max-delay-ms=${DOWNSTREAM_API_RETRY_MAX_DELAY_MS}
+      digital-assets-onboarding.downstream.api.retry.max-attempts=file:/etc/secrets/retry.max-attempts
+      digital-assets-onboarding.downstream.api.retry.max-delay-ms=file:/etc/secrets/retry.max-delay-ms
 
     logback-spring.xml: |
       <?xml version="1.0" encoding="UTF-8"?>
@@ -96,42 +96,42 @@ externalsecrets:
     # Database Secrets
     - secretKey: spring.datasource.url
       remoteRef:
-        key: digital_wallet_secret
+        key: digital_assets_onboarding_secrets
         property: spring.datasource.url
     - secretKey: spring.datasource.username
       remoteRef:
-        key: digital_wallet_secret
+        key: digital_assets_onboarding_secrets
         property: spring.datasource.username
     - secretKey: spring.datasource.password
       remoteRef:
-        key: digital_wallet_secret
+        key: digital_assets_onboarding_secrets
         property: spring.datasource.password
     - secretKey: spring.jpa.properties.hibernate.default_schema
       remoteRef:
-        key: digital_wallet_secret
+        key: digital_assets_onboarding_secrets
         property: spring.jpa.properties.hibernate.default_schema
 
     # Application Secrets
-    - secretKey: digital-assets-onboarding.client.middleware.updateCifUrl
+    - secretKey: middleware.updateCifUrl
       remoteRef:
-        key: digital_asset_dev
-        property: digital-assets-onboarding.client.middleware.updateCifUrl
-    - secretKey: digital-assets-onboarding.client.notificationservice.notificationUrl
+        key: digital_assets_onboarding_secrets
+        property: middleware.updateCifUrl
+    - secretKey: notificationservice.notificationUrl
       remoteRef:
-        key: digital_asset_dev
-        property: digital-assets-onboarding.client.notificationservice.notificationUrl
-    - secretKey: digital-assets-onboarding.client.producteligibility.eligibilityUrl
+        key: digital_assets_onboarding_secrets
+        property: notificationservice.notificationUrl
+    - secretKey: producteligibility.eligibilityUrl
       remoteRef:
-        key: digital_asset_dev
-        property: digital-assets-onboarding.client.producteligibility.eligibilityUrl
-    - secretKey: digital-assets-onboarding.downstream.api.retry.max-attempts
+        key: digital_assets_onboarding_secrets
+        property: producteligibility.eligibilityUrl
+    - secretKey: retry.max-attempts
       remoteRef:
-        key: digital_asset_dev
-        property: digital-assets-onboarding.downstream.api.retry.max-attempts
-    - secretKey: digital-assets-onboarding.downstream.api.retry.max-delay-ms
+        key: digital_assets_onboarding_secrets
+        property: retry.max-attempts
+    - secretKey: retry.max-delay-ms
       remoteRef:
-        key: digital_asset_dev
-        property: digital-assets-onboarding.downstream.api.retry.max-delay-ms
+        key: digital_assets_onboarding_secrets
+        property: retry.max-delay-ms
 
 # Deployment #
 deployments:
@@ -151,56 +151,15 @@ deployments:
     containerPort: 8091
     configMapRef:
       name: digital-assets-onboarding-configmap
+    volumes:
+      - name: secret-volume
+        secret:
+          secretName: digital-assets-onboarding-secrets
+    volumeMounts:
+      - name: secret-volume
+        mountPath: /etc/secrets
+        readOnly: true
     env:
-      # Database Secrets from External Secrets
-      - name: SPRING_DATASOURCE_URL
-        valueFrom:
-          secretKeyRef:
-            name: digital-assets-onboarding-secrets
-            key: spring.datasource.url
-      - name: SPRING_DATASOURCE_USERNAME
-        valueFrom:
-          secretKeyRef:
-            name: digital-assets-onboarding-secrets
-            key: spring.datasource.username
-      - name: SPRING_DATASOURCE_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: digital-assets-onboarding-secrets
-            key: spring.datasource.password
-      - name: SPRING_JPA_HIBERNATE_SCHEMA
-        valueFrom:
-          secretKeyRef:
-            name: digital-assets-onboarding-secrets
-            key: spring.jpa.properties.hibernate.default_schema
-
-      # Application Secrets from External Secrets
-      - name: MIDDLEWARE_UPDATE_CIF_URL
-        valueFrom:
-          secretKeyRef:
-            name: digital-assets-onboarding-secrets
-            key: digital-assets-onboarding.client.middleware.updateCifUrl
-      - name: NOTIFICATION_SERVICE_URL
-        valueFrom:
-          secretKeyRef:
-            name: digital-assets-onboarding-secrets
-            key: digital-assets-onboarding.client.notificationservice.notificationUrl
-      - name: PRODUCT_ELIGIBILITY_URL
-        valueFrom:
-          secretKeyRef:
-            name: digital-assets-onboarding-secrets
-            key: digital-assets-onboarding.client.producteligibility.eligibilityUrl
-      - name: DOWNSTREAM_API_RETRY_MAX_ATTEMPTS
-        valueFrom:
-          secretKeyRef:
-            name: digital-assets-onboarding-secrets
-            key: digital-assets-onboarding.downstream.api.retry.max-attempts
-      - name: DOWNSTREAM_API_RETRY_MAX_DELAY_MS
-        valueFrom:
-          secretKeyRef:
-            name: digital-assets-onboarding-secrets
-            key: digital-assets-onboarding.downstream.api.retry.max-delay-ms
-
       - name: TZ
         value: "Asia/Dubai"
       - name: SPRING_PROFILES_ACTIVE
@@ -225,47 +184,3 @@ deployments:
       periodSeconds: 10
     nodeSelector:
       environment: pt
-    volumes:
-      - name: app-properties
-        configMap:
-          name: digital-assets-onboarding-configmap
-    volumeMounts:
-      - name: app-properties
-        mountPath: /usr/app/config
-        items:
-          - key: application-pt.properties
-            path: application-pt.properties
-          - key: logback-spring.xml
-            path: logback-spring.xml
-# Internal Service #
-service:
-  name: digital-assets-onboarding-service
-  selector:
-    app: digital-assets-onboarding-service
-  ports:
-    - protocol: TCP
-      port: 8091
-      targetPort: 8091
-  type: ClusterIP
-# External Service #
-externalService:
-  enabled: true
-  name: digital-assets-onboarding-external-service
-  selector:
-    app: digital-assets-onboarding-service
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8091
-  type: LoadBalancer
-# PDB (Pod Disruption Budget) #
-pdb:
-  enabled: true
-  name: digital-assets-onboarding-pdb
-  namespace: digital-assets
-  minAvailable: 2
-  labels:
-    app: digital-assets-onboarding-service
-  selector:
-    matchLabels:
-      app: digital-assets-onboarding-service
