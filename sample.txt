@@ -1,23 +1,100 @@
-Here are the **exact parameter names** that developers need to add to the secret:
+  Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.5.1:compile (default-compile) on project digital-assets-commons-lib: Fatal error compiling: error: invalid target release: 21 -
 
----
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-### **Database Parameters**
-1. `spring.datasource.url`
-2. `spring.datasource.username`
-3. `spring.datasource.password`
-4. `spring.jpa.properties.hibernate.default_schema`
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.5</version>
+        <relativePath/>
+    </parent>
 
----
+    <groupId>ae.rakbank</groupId>
+    <artifactId>digital-assets-commons-lib</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
-### **Application Parameters**
-1. `middleware.updateCifUrl`
-2. `notificationservice.notificationUrl`
-3. `producteligibility.eligibilityUrl`
-4. `retry.max-attempts`
-5. `retry.max-delay-ms`
+    <properties>
+        <java.version>21</java.version>
+    </properties>
 
----
+    <dependencies>
 
-### Summary
-These parameter names should be added to the secret, ensuring they match exactly as listed above. Let me know if anything else is needed!
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.retry</groupId>
+            <artifactId>spring-retry</artifactId>
+            <version>2.0.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.34</version>
+            <scope>provided</scope>
+        </dependency>
+
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <id>rakbank-artifactory-maven-dev</id>
+            <name>rakbank-artifactory-maven-dev</name>
+            <url>https://rakartifactory.jfrog.io/artifactory/rakbank-artifactory-maven-dev/</url>
+        </repository>
+    </repositories>
+
+    <!--     Distribution Management to deploy to rakartifactory jfrog -->
+    <distributionManagement>
+        <repository>
+            <id>rakbank-artifactory-maven-dev-local</id>
+            <url>https://rakartifactory.jfrog.io/artifactory/rakbank-artifactory-maven-dev-local/</url>
+        </repository>
+    </distributionManagement>
+
+    <build>
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>1.6.2</version>
+            </extension>
+        </extensions>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <source>21</source>
+                    <target>21</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
