@@ -4,7 +4,7 @@ configmap:
   name: digital-assets-onboarding-configmap
   enabled: true
   data:
-    application-pt.properties: |
+    application-dev.properties: |
       server.port=8091
       server.servlet.context-path=/digital-assets/onboarding
       spring.application.name=digital-assets-onboarding
@@ -61,7 +61,7 @@ configmap:
     logback-spring.xml: |
       <?xml version="1.0" encoding="UTF-8"?>
       <configuration>
-          <property file="config/application-pt.properties"/>
+          <property file="config/application-dev.properties"/>
 
           <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
           <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
@@ -180,9 +180,48 @@ externalService:
     app: digital-assets-onboarding-service
   ports:
     - protocol: TCP
-      port: 80
+      port: 443
       targetPort: 8091
   type: LoadBalancer
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "<your-ssl-cert-arn>"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "HTTP"
+    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+# Istio Gateway #
+gateway:
+  enabled: true
+  name: digital-assets-onboarding-gateway
+  namespace: digital-assets
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: digital-assets-tls
+      hosts:
+        - "*"
+# Virtual Service #
+virtualService:
+  enabled: true
+  name: digital-assets-onboarding-virtual-service
+  namespace: digital-assets
+  hosts:
+    - "*"
+  gateways:
+    - digital-assets-onboarding-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/digital-assets"
+      route:
+        - destination:
+            host: digital-assets-onboarding-service
+            port:
+              number: 8091
 # PDB (Pod Disruption Budget) #
 pdb:
   enabled: true
@@ -194,5 +233,3 @@ pdb:
   selector:
     matchLabels:
       app: digital-assets-onboarding-service
-
-I jsut verified the values file. The structure is fine. right now we are missing details for virtual services, istio gateway and node selector according to the separate node pool.
