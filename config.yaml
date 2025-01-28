@@ -1,4 +1,4 @@
-namespace: digital-assets
+namespace: digital-wallet
 # Configmap #
 configmap:
   name: digital-assets-onboarding-configmap
@@ -115,11 +115,11 @@ externalsecrets:
 deployments:
   - name: digital-assets-onboarding-service
     namespace: digital-assets
-    replicaCount: 3
+    replicaCount: 2
     autoscaling:
       enabled: true
-      minReplicas: 3
-      maxReplicas: 6
+      minReplicas: 2
+      maxReplicas: 3
       targetCPUUtilizationPercentage: 75
     containerName: digital-assets-onboarding-container
     image:
@@ -161,7 +161,7 @@ deployments:
       initialDelaySeconds: 30
       periodSeconds: 10
     nodeSelector:
-      project: deh
+      project: "deh"
 # Service #
 service:
   name: digital-assets-onboarding-service
@@ -172,64 +172,49 @@ service:
       port: 8091
       targetPort: 8091
   type: ClusterIP
-# External Service #
-externalService:
-  enabled: true
-  name: digital-assets-onboarding-external-service
-  selector:
-    app: digital-assets-onboarding-service
-  ports:
-    - protocol: TCP
-      port: 443
-      targetPort: 8091
-  type: LoadBalancer
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "<your-ssl-cert-arn>"
-    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "HTTP"
-    service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+
 # Istio Gateway #
 gateway:
   enabled: true
   name: digital-assets-onboarding-gateway
-  namespace: digital-assets
-  selector:
-    istio: ingressgateway
-  servers:
-    - port:
-        number: 443
-        name: https
-        protocol: HTTPS
-      tls:
-        mode: SIMPLE
-        credentialName: digital-assets-tls
-      hosts:
-        - "*"
+  port:
+    number: 443
+    protocol: HTTPS
+  tls:
+    mode: SIMPLE
+    cert: istio-certificate-secret
+  hosts:
+    - "digitalasset-dev.rakbanktst.ae"
+
 # Virtual Service #
 virtualService:
   enabled: true
-  name: digital-assets-onboarding-virtual-service
-  namespace: digital-assets
+  name: retail-accounts-virtual-service
+  namespace: bff-pt
   hosts:
-    - "*"
-  gateways:
-    - digital-assets-onboarding-gateway
+    - "digitalasset-dev.rakbanktst.ae"
+  gateway: experience-gateway
   http:
-    - match:
-        - uri:
-            prefix: "/digital-assets"
+    - uri: "/digital-assets"
       route:
-        - destination:
-            host: digital-assets-onboarding-service
-            port:
-              number: 8091
-# PDB (Pod Disruption Budget) #
-pdb:
+        - host: digital-assets-onboarding-service
+          subset: v1
+          port: 8091
+      retries:
+        attempts: 3
+        perTryTimeout: "10s"
+        retryOn: "5xx,connect-failure"
+
+destinationRule:
   enabled: true
-  name: digital-assets-onboarding-pdb
-  namespace: digital-assets
-  minAvailable: 2
-  labels:
-    app: digital-assets-onboarding-service
-  selector:
-    matchLabels:
-      app: digital-assets-onboarding-service
+  name: digital-assets-onboarding-destination-rule
+  host: digital-assets-onboarding-service
+  subsets:
+    - name: v1
+      labels:
+        version: v1
+    - name: v2
+      labels:
+        version: v2
+namespace: digital-wallet
+
