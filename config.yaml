@@ -194,3 +194,5 @@ pdb:
   selector:
     matchLabels:
       app: digital-assets-onboarding-service
+
+I jsut verified the values file. The structure is fine. right now we are missing details for virtual services, istio gateway and node selector according to the separate node pool.
