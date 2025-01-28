@@ -190,10 +190,10 @@ gateway:
 virtualService:
   enabled: true
   name: retail-accounts-virtual-service
-  namespace: bff-pt
+  namespace: digital-assets
   hosts:
     - "digitalasset-dev.rakbanktst.ae"
-  gateway: experience-gateway
+  gateway: digital-assets-onboarding-gateway
   http:
     - uri: "/digital-assets"
       route:
@@ -216,5 +216,3 @@ destinationRule:
     - name: v2
       labels:
         version: v2
-namespace: digital-wallet
-
