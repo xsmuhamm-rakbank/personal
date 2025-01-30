@@ -114,7 +114,7 @@ externalsecrets:
 # Deployment #
 deployments:
   - name: digital-assets-onboarding-service
-    namespace: digital-assets
+    namespace: digital-wallet
     replicaCount: 2
     autoscaling:
       enabled: true
@@ -190,7 +190,7 @@ gateway:
 virtualService:
   enabled: true
   name: retail-accounts-virtual-service
-  namespace: digital-assets
+  namespace: digital-wallet
   hosts:
     - "digitalasset-dev.rakbanktst.ae"
   gateway: digital-assets-onboarding-gateway
@@ -216,3 +216,13 @@ destinationRule:
     - name: v2
       labels:
         version: v2
+
+need to add this 
+
+# Batch configuration
+digital-assets-onboarding.notifications.batch.initial-delay.minutes=2
+digital-assets-onboarding.notifications.batch.interval.minutes=240
+digital-assets-onboarding.notifications.batch.shedlock-at-least=PT5M
+digital-assets-onboarding.notifications.batch.shedlock-at-most=PT10M
+digital-assets-onboarding.notifications.batch.enabled=false
+digital-assets-onboarding.notifications.batch.max-retry-attempts=3
