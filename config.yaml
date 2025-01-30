@@ -35,6 +35,14 @@ configmap:
       batch.shedlock-at-most=PT10M
       batch.enabled=false
 
+      # Notifications Batch Configuration
+      digital-assets-onboarding.notifications.batch.initial-delay.minutes=2
+      digital-assets-onboarding.notifications.batch.interval.minutes=240
+      digital-assets-onboarding.notifications.batch.shedlock-at-least=PT5M
+      digital-assets-onboarding.notifications.batch.shedlock-at-most=PT10M
+      digital-assets-onboarding.notifications.batch.enabled=false
+      digital-assets-onboarding.notifications.batch.max-retry-attempts=3
+
       # Observability configurations
       observability.correlationIdHeader=x-correlation-id
       observability.tracerName=digital-assets-onboarding
@@ -58,30 +66,6 @@ configmap:
       digital-assets-onboarding.downstream.api.retry.max-attempts=3
       digital-assets-onboarding.downstream.api.retry.max-delay-ms=3000
 
-    logback-spring.xml: |
-      <?xml version="1.0" encoding="UTF-8"?>
-      <configuration>
-          <property file="config/application-dev.properties"/>
-
-          <conversionRule conversionWord="clr" converterClass="org.springframework.boot.logging.logback.ColorConverter"/>
-          <conversionRule conversionWord="wex" converterClass="org.springframework.boot.logging.logback.WhitespaceThrowableProxyConverter"/>
-          <conversionRule conversionWord="wEx" converterClass="org.springframework.boot.logging.logback.ExtendedWhitespaceThrowableProxyConverter"/>
-
-          <springProfile name="dev">
-              <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
-                  <layout class="ch.qos.logback.classic.PatternLayout">
-                      <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n</pattern>
-                  </layout>
-              </appender>
-
-              <logger name="org.springframework" level="INFO"/>
-              <logger name="digital-assets-onboarding" level="DEBUG"/>
-
-              <root level="INFO">
-                  <appender-ref ref="Console"/>
-              </root>
-          </springProfile>
-      </configuration>
 # External Secrets #
 externalsecrets:
   enabled: true
@@ -110,119 +94,3 @@ externalsecrets:
       remoteRef:
         key: /da-dev/digital-assets-onboarding
         property: spring.jpa.properties.hibernate.default_schema
-
-# Deployment #
-deployments:
-  - name: digital-assets-onboarding-service
-    namespace: digital-wallet
-    replicaCount: 2
-    autoscaling:
-      enabled: true
-      minReplicas: 2
-      maxReplicas: 3
-      targetCPUUtilizationPercentage: 75
-    containerName: digital-assets-onboarding-container
-    image:
-      registry: "625611776955.dkr.ecr.me-central-1.amazonaws.com"
-      repository: "digital-asset-service"
-      tag: "develop-ae8464b"
-    containerPort: 8091
-    configMapRef:
-      name: digital-assets-onboarding-configmap
-    volumes:
-      - name: secret-volume
-        secret:
-          secretName: /da-dev/digital-assets-onboarding
-    volumeMounts:
-      - name: secret-volume
-        mountPath: /etc/secrets
-        readOnly: true
-    env:
-      - name: TZ
-        value: "Asia/Dubai"
-      - name: SPRING_PROFILES_ACTIVE
-        value: "dev"
-    resources:
-      limits:
-        memory: "2000Mi"
-      requests:
-        cpu: "512m"
-        memory: "2000Mi"
-    livenessProbe:
-      httpGet:
-        path: /digital-assets/onboarding/health-check/liveness
-        port: 8091
-      initialDelaySeconds: 5
-      periodSeconds: 10
-    readinessProbe:
-      httpGet:
-        path: /digital-assets/onboarding/health-check/readiness
-        port: 8091
-      initialDelaySeconds: 30
-      periodSeconds: 10
-    nodeSelector:
-      project: "deh"
-# Service #
-service:
-  name: digital-assets-onboarding-service
-  selector:
-    app: digital-assets-onboarding-service
-  ports:
-    - protocol: TCP
-      port: 8091
-      targetPort: 8091
-  type: ClusterIP
-
-# Istio Gateway #
-gateway:
-  enabled: true
-  name: digital-assets-onboarding-gateway
-  port:
-    number: 443
-    protocol: HTTPS
-  tls:
-    mode: SIMPLE
-    cert: istio-certificate-secret
-  hosts:
-    - "digitalasset-dev.rakbanktst.ae"
-
-# Virtual Service #
-virtualService:
-  enabled: true
-  name: retail-accounts-virtual-service
-  namespace: digital-wallet
-  hosts:
-    - "digitalasset-dev.rakbanktst.ae"
-  gateway: digital-assets-onboarding-gateway
-  http:
-    - uri: "/digital-assets"
-      route:
-        - host: digital-assets-onboarding-service
-          subset: v1
-          port: 8091
-      retries:
-        attempts: 3
-        perTryTimeout: "10s"
-        retryOn: "5xx,connect-failure"
-
-destinationRule:
-  enabled: true
-  name: digital-assets-onboarding-destination-rule
-  host: digital-assets-onboarding-service
-  subsets:
-    - name: v1
-      labels:
-        version: v1
-    - name: v2
-      labels:
-        version: v2
-
-need to add this 
-
-# Batch configuration
-digital-assets-onboarding.notifications.batch.initial-delay.minutes=2
-digital-assets-onboarding.notifications.batch.interval.minutes=240
-digital-assets-onboarding.notifications.batch.shedlock-at-least=PT5M
-digital-assets-onboarding.notifications.batch.shedlock-at-most=PT10M
-digital-assets-onboarding.notifications.batch.enabled=false
-digital-assets-onboarding.notifications.batch.max-retry-attempts=3
