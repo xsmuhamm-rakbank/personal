@@ -94,3 +94,109 @@ externalsecrets:
       remoteRef:
         key: /da-dev/digital-assets-onboarding
         property: spring.jpa.properties.hibernate.default_schema
+
+# Deployment #
+deployments:
+  - name: digital-assets-onboarding-service
+    namespace: digital-wallet
+    replicaCount: 2
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 3
+      targetCPUUtilizationPercentage: 75
+    containerName: digital-assets-onboarding-container
+    image:
+      registry: "625611776955.dkr.ecr.me-central-1.amazonaws.com"
+      repository: "digital-asset-service"
+      tag: "develop-ae8464b"
+    containerPort: 8091
+    configMapRef:
+      name: digital-assets-onboarding-configmap
+    volumes:
+      - name: secret-volume
+        secret:
+          secretName: /da-dev/digital-assets-onboarding
+    volumeMounts:
+      - name: secret-volume
+        mountPath: /etc/secrets
+        readOnly: true
+    env:
+      - name: TZ
+        value: "Asia/Dubai"
+      - name: SPRING_PROFILES_ACTIVE
+        value: "dev"
+    resources:
+      limits:
+        memory: "2000Mi"
+      requests:
+        cpu: "512m"
+        memory: "2000Mi"
+    livenessProbe:
+      httpGet:
+        path: /digital-assets/onboarding/health-check/liveness
+        port: 8091
+      initialDelaySeconds: 5
+      periodSeconds: 10
+    readinessProbe:
+      httpGet:
+        path: /digital-assets/onboarding/health-check/readiness
+        port: 8091
+      initialDelaySeconds: 30
+      periodSeconds: 10
+    nodeSelector:
+      project: "deh"
+# Service #
+service:
+  name: digital-assets-onboarding-service
+  selector:
+    app: digital-assets-onboarding-service
+  ports:
+    - protocol: TCP
+      port: 8091
+      targetPort: 8091
+  type: ClusterIP
+
+# Istio Gateway #
+gateway:
+  enabled: true
+  name: digital-assets-onboarding-gateway
+  port:
+    number: 443
+    protocol: HTTPS
+  tls:
+    mode: SIMPLE
+    cert: istio-certificate-secret
+  hosts:
+    - "digitalasset-dev.rakbanktst.ae"
+
+# Virtual Service #
+virtualService:
+  enabled: true
+  name: retail-accounts-virtual-service
+  namespace: digital-wallet
+  hosts:
+    - "digitalasset-dev.rakbanktst.ae"
+  gateway: digital-assets-onboarding-gateway
+  http:
+    - uri: "/digital-assets"
+      route:
+        - host: digital-assets-onboarding-service
+          subset: v1
+          port: 8091
+      retries:
+        attempts: 3
+        perTryTimeout: "10s"
+        retryOn: "5xx,connect-failure"
+
+destinationRule:
+  enabled: true
+  name: digital-assets-onboarding-destination-rule
+  host: digital-assets-onboarding-service
+  subsets:
+    - name: v1
+      labels:
+        version: v1
+    - name: v2
+      labels:
+        version: v2
