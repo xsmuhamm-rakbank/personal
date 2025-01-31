@@ -65,7 +65,6 @@ configmap:
       # Retry Config
       digital-assets-onboarding.downstream.api.retry.max-attempts=3
       digital-assets-onboarding.downstream.api.retry.max-delay-ms=3000
-
 # External Secrets #
 externalsecrets:
   enabled: true
@@ -94,7 +93,6 @@ externalsecrets:
       remoteRef:
         key: /da-dev/digital-assets-onboarding
         property: spring.jpa.properties.hibernate.default_schema
-
 # Deployment #
 deployments:
   - name: digital-assets-onboarding-service
@@ -128,10 +126,11 @@ deployments:
         value: "dev"
     resources:
       limits:
-        memory: "2000Mi"
+        cpu: "256m"
+        memory: "256Mi"
       requests:
-        cpu: "512m"
-        memory: "2000Mi"
+        cpu: "256m"
+        memory: "256Mi"
     livenessProbe:
       httpGet:
         path: /digital-assets/onboarding/health-check/liveness
@@ -145,7 +144,9 @@ deployments:
       initialDelaySeconds: 30
       periodSeconds: 10
     nodeSelector:
-      project: "deh"
+      application_visa: "visa-epp"
+      application_digital: "digital-assets"
+      project: "da"
 # Service #
 service:
   name: digital-assets-onboarding-service
@@ -156,7 +157,6 @@ service:
       port: 8091
       targetPort: 8091
   type: ClusterIP
-
 # Istio Gateway #
 gateway:
   enabled: true
@@ -166,10 +166,9 @@ gateway:
     protocol: HTTPS
   tls:
     mode: SIMPLE
-    cert: istio-certificate-secret
+    cert: istio-digital-assets-certificate
   hosts:
     - "digitalasset-dev.rakbanktst.ae"
-
 # Virtual Service #
 virtualService:
   enabled: true
@@ -188,7 +187,6 @@ virtualService:
         attempts: 3
         perTryTimeout: "10s"
         retryOn: "5xx,connect-failure"
-
 destinationRule:
   enabled: true
   name: digital-assets-onboarding-destination-rule
@@ -202,4 +200,5 @@ destinationRule:
         version: v2
 
 
-istio-digital-assets-certificate
+Release "digital-assets-onboarding-service" does not exist. Installing it now.
+Error: Deployment.apps "digital-assets-onboarding-service" is invalid: spec.selector: Invalid value: v1.LabelSelector{MatchLabels:map[string]string(nil), MatchExpressions:[]v1.LabelSelectorRequirement(nil)}: empty selector is invalid for deployment
