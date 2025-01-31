@@ -200,3 +200,6 @@ destinationRule:
     - name: v2
       labels:
         version: v2
+
+
+istio-digital-assets-certificate
