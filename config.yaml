@@ -1,5 +1,6 @@
 namespace: digital-wallet
-# Configmap #
+
+# ConfigMap #
 configmap:
   name: digital-assets-onboarding-configmap
   enabled: true
@@ -28,7 +29,7 @@ configmap:
       management.info.env.enabled=true
       management.endpoint.prometheus.enabled=false
 
-      # Batch configuration
+      # Batch Configuration
       batch.initial-delay.minutes=2
       batch.interval.minutes=240
       batch.shedlock-at-least=PT5M
@@ -43,7 +44,7 @@ configmap:
       digital-assets-onboarding.notifications.batch.enabled=false
       digital-assets-onboarding.notifications.batch.max-retry-attempts=3
 
-      # Observability configurations
+      # Observability Configurations
       observability.correlationIdHeader=x-correlation-id
       observability.tracerName=digital-assets-onboarding
 
@@ -53,18 +54,19 @@ configmap:
       # Application Specific Configuration
       digital-assets-onboarding.activityLog.db-logging.enable=true
 
-      # Middleware properties
+      # Middleware Properties
       digital-assets-onboarding.client.middleware.updateCifUrl=http://localhost:9093/middleware/updateCif
 
-      # NotificationService properties
+      # NotificationService Properties
       digital-assets-onboarding.client.notificationservice.notificationUrl=http://localhost:8096/digital-assets/notifications/api/v1/customer/{cif}
 
-      # ProductEligibility properties
+      # ProductEligibility Properties
       digital-assets-onboarding.client.producteligibility.eligibilityUrl=http://localhost:8095/product-eligibility/api/v1/customer/{cif}
 
       # Retry Config
       digital-assets-onboarding.downstream.api.retry.max-attempts=3
       digital-assets-onboarding.downstream.api.retry.max-delay-ms=3000
+
 # External Secrets #
 externalsecrets:
   enabled: true
@@ -76,7 +78,6 @@ externalsecrets:
     name: /da-dev/digital-assets-onboarding
     creationPolicy: Owner
   data:
-    # Database Secrets
     - secretKey: spring.datasource.url
       remoteRef:
         key: /da-dev/digital-assets-onboarding
@@ -93,6 +94,7 @@ externalsecrets:
       remoteRef:
         key: /da-dev/digital-assets-onboarding
         property: spring.jpa.properties.hibernate.default_schema
+
 # Deployment #
 deployments:
   - name: digital-assets-onboarding-service
@@ -103,50 +105,56 @@ deployments:
       minReplicas: 2
       maxReplicas: 3
       targetCPUUtilizationPercentage: 75
-    containerName: digital-assets-onboarding-container
-    image:
-      registry: "625611776955.dkr.ecr.me-central-1.amazonaws.com"
-      repository: "digital-asset-service"
-      tag: "develop-ae8464b"
-    containerPort: 8091
-    configMapRef:
-      name: digital-assets-onboarding-configmap
-    volumes:
-      - name: secret-volume
-        secret:
-          secretName: /da-dev/digital-assets-onboarding
-    volumeMounts:
-      - name: secret-volume
-        mountPath: /etc/secrets
-        readOnly: true
-    env:
-      - name: TZ
-        value: "Asia/Dubai"
-      - name: SPRING_PROFILES_ACTIVE
-        value: "dev"
-    resources:
-      limits:
-        cpu: "256m"
-        memory: "256Mi"
-      requests:
-        cpu: "256m"
-        memory: "256Mi"
-    livenessProbe:
-      httpGet:
-        path: /digital-assets/onboarding/health-check/liveness
-        port: 8091
-      initialDelaySeconds: 5
-      periodSeconds: 10
-    readinessProbe:
-      httpGet:
-        path: /digital-assets/onboarding/health-check/readiness
-        port: 8091
-      initialDelaySeconds: 30
-      periodSeconds: 10
-    nodeSelector:
-      application_visa: "visa-epp"
-      application_digital: "digital-assets"
-      project: "da"
+    selector:
+      matchLabels:
+        app: digital-assets-onboarding-service
+    template:
+      metadata:
+        labels:
+          app: digital-assets-onboarding-service
+      spec:
+        containers:
+          - name: digital-assets-onboarding-container
+            image: "625611776955.dkr.ecr.me-central-1.amazonaws.com/digital-asset-service:develop-ae8464b"
+            ports:
+              - containerPort: 8091
+            env:
+              - name: TZ
+                value: "Asia/Dubai"
+              - name: SPRING_PROFILES_ACTIVE
+                value: "dev"
+            volumeMounts:
+              - name: secret-volume
+                mountPath: /etc/secrets
+                readOnly: true
+            resources:
+              limits:
+                cpu: "256m"
+                memory: "256Mi"
+              requests:
+                cpu: "256m"
+                memory: "256Mi"
+            livenessProbe:
+              httpGet:
+                path: /digital-assets/onboarding/health-check/liveness
+                port: 8091
+              initialDelaySeconds: 5
+              periodSeconds: 10
+            readinessProbe:
+              httpGet:
+                path: /digital-assets/onboarding/health-check/readiness
+                port: 8091
+              initialDelaySeconds: 30
+              periodSeconds: 10
+        volumes:
+          - name: secret-volume
+            secret:
+              secretName: /da-dev/digital-assets-onboarding
+        nodeSelector:
+          application_visa: "visa-epp"
+          application_digital: "digital-assets"
+          project: "da"
+
 # Service #
 service:
   name: digital-assets-onboarding-service
@@ -157,6 +165,7 @@ service:
       port: 8091
       targetPort: 8091
   type: ClusterIP
+
 # Istio Gateway #
 gateway:
   enabled: true
@@ -169,10 +178,11 @@ gateway:
     cert: istio-digital-assets-certificate
   hosts:
     - "digitalasset-dev.rakbanktst.ae"
+
 # Virtual Service #
 virtualService:
   enabled: true
-  name: retail-accounts-virtual-service
+  name: digital-assets-onboarding-virtual-service
   namespace: digital-wallet
   hosts:
     - "digitalasset-dev.rakbanktst.ae"
@@ -180,13 +190,17 @@ virtualService:
   http:
     - uri: "/digital-assets"
       route:
-        - host: digital-assets-onboarding-service
-          subset: v1
-          port: 8091
+        - destination:
+            host: digital-assets-onboarding-service
+            subset: v1
+            port:
+              number: 8091
       retries:
         attempts: 3
         perTryTimeout: "10s"
         retryOn: "5xx,connect-failure"
+
+# Destination Rule #
 destinationRule:
   enabled: true
   name: digital-assets-onboarding-destination-rule
@@ -198,7 +212,3 @@ destinationRule:
     - name: v2
       labels:
         version: v2
-
-
-Release "digital-assets-onboarding-service" does not exist. Installing it now.
-Error: Deployment.apps "digital-assets-onboarding-service" is invalid: spec.selector: Invalid value: v1.LabelSelector{MatchLabels:map[string]string(nil), MatchExpressions:[]v1.LabelSelectorRequirement(nil)}: empty selector is invalid for deployment
